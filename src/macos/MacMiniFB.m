@@ -7,6 +7,7 @@
 #include <sched.h>
 #include <mach/mach_time.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include "OSXWindow.h"
 #include "OSXView.h"
@@ -785,6 +786,52 @@ mfb_set_title(struct mfb_window *window, const char *title) {
                 [window_data_specific->window setTitle:new_title];
             }
         }
+    }
+}
+
+//-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    if (window == 0x0) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    if (title != 0x0 && title_size <= 0) {
+        return MFB_STRING_INVALID_ARGUMENT;
+    }
+
+    SWindowData *window_data = (SWindowData *) window;
+    SWindowData_OSX *window_data_specific = (SWindowData_OSX *) window_data->specific;
+    if (window_data_specific == 0x0 || window_data_specific->window == nil) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    @autoreleasepool {
+        NSString *current_title = [window_data_specific->window title];
+        if (current_title == nil) {
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+
+        const char *utf8_title = [current_title UTF8String];
+        if (utf8_title == NULL) {
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+
+        // utf8_title should be null-terminated, so this should be safe.
+        size_t length = strlen(utf8_title);
+        if (length > INT_MAX) {
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+
+        if (title != 0x0) {
+            if (length >= (size_t) title_size) {
+                return MFB_STRING_BUFFER_TOO_SMALL;
+            }
+            memcpy(title, utf8_title, length);
+            title[length] = '\0'; // Add the null terminator by ourselves, just to be safe.
+        }
+
+        return (mfb_string_result) ((int) length);
     }
 }
 

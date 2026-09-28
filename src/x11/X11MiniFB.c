@@ -1488,6 +1488,104 @@ mfb_set_title(struct mfb_window *window, const char *title) {
 }
 
 //-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    if (window == 0x0) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    if (title != 0x0 && title_size <= 0) {
+        return MFB_STRING_INVALID_ARGUMENT;
+    }
+
+    SWindowData *window_data = (SWindowData *) window;
+    SWindowData_X11 *window_data_specific = window_data->specific;
+    if (window_data_specific == 0x0) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    Atom actual_type = None;
+    int actual_format = 0;
+    unsigned long nitems = 0;
+    unsigned long bytes_after = 0;
+    unsigned char *prop = NULL;
+    Atom utf8_string = XInternAtom(window_data_specific->display, "UTF8_STRING", False);
+
+    // Try getting the UTF-8 window title first
+    int status = XGetWindowProperty(
+        window_data_specific->display,
+        window_data_specific->window,
+        XInternAtom(window_data_specific->display, "_NET_WM_NAME", False),
+        0,
+        LONG_MAX,
+        False,
+        utf8_string,
+        &actual_type,
+        &actual_format,
+        &nitems,
+        &bytes_after,
+        &prop
+    );    
+    if (status != Success || actual_type != utf8_string || actual_format != 8 || bytes_after != 0 || (nitems > 0 && prop == NULL)) {
+        if (prop != NULL) {
+            XFree(prop);
+            prop = NULL;
+        }
+
+        // If that fails, try getting the legacy window title
+        Atom string = XA_STRING;
+        status = XGetWindowProperty(
+            window_data_specific->display,
+            window_data_specific->window,
+            XInternAtom(window_data_specific->display, "WM_NAME", False),
+            0,
+            LONG_MAX,
+            False,
+            string,
+            &actual_type,
+            &actual_format,
+            &nitems,
+            &bytes_after,
+            &prop
+        );        
+        if (status != Success || actual_type != string || actual_format != 8 || bytes_after != 0 || (nitems > 0 && prop == NULL)) {
+            if (prop != NULL) {
+                XFree(prop);
+            }
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+    }
+
+    if (nitems > INT_MAX) {
+        if (prop != NULL) {
+            XFree(prop);
+        }
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+
+    if (title != 0x0) {
+        if (nitems >= (unsigned long) title_size) {
+            if (prop != NULL) {
+                XFree(prop);
+            }
+            return MFB_STRING_BUFFER_TOO_SMALL;
+        }
+
+        if (nitems > 0) {
+            memcpy(title, prop, (size_t) nitems);
+        }
+        
+        title[nitems] = '\0';
+    }
+
+    if (prop != NULL) {
+        XFree(prop);
+    }
+
+    return (mfb_string_result) nitems;
+}
+
+//-------------------------------------
 void
 mfb_get_monitor_scale(struct mfb_window *window, float *scale_x, float *scale_y) {
     float x = 1.0f, y = 1.0f;

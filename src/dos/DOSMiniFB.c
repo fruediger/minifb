@@ -483,6 +483,15 @@ mfb_set_title(struct mfb_window *window, const char *title) {
 }
 
 //-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    (void) window;
+    (void) title;
+    (void) title_size;
+    return MFB_STRING_INTERNAL_ERROR;
+}
+
+//-------------------------------------
 static void
 update_mouse(SWindowData *window_data) {
   if (!g_mouse_present)

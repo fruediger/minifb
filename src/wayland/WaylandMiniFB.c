@@ -1071,6 +1071,14 @@ destroy_window_data(SWindowData *window_data) {
         kWaylandDestroy(window_data_specific->xkb_context,       xkb_context_unref);
 
         mfb_timer_destroy(window_data_specific->timer);
+
+#ifndef MINIFB_HAS_LIBDECOR
+        if (window_data_specific->toplevel_title != NULL) {
+            free(window_data_specific->toplevel_title);
+            window_data_specific->toplevel_title = NULL;
+        }
+#endif
+
         memset(window_data_specific, 0, sizeof(SWindowData_Way));
         free(window_data_specific);
     }
@@ -3134,12 +3142,26 @@ create_xdg_toplevel(SWindowData *window_data, SWindowData_Way *window_data_speci
 
     xdg_toplevel_set_app_id(window_data_specific->toplevel, MFB_STR(MFB_APP_ID));
 
+#ifdef MINIFB_HAS_LIBDECOR
     char *safe_title = mfb_safe_title_copy(window_title);
 
     if (safe_title != NULL) {
         xdg_toplevel_set_title(window_data_specific->toplevel, safe_title);
         free(safe_title);
     }
+#else
+    if (window_data_specific->toplevel_title != NULL) {
+        // This shouldn't actually hit, but just in case.
+        free(window_data_specific->toplevel_title);
+        window_data_specific->toplevel_title = NULL;
+    }
+    window_data_specific->toplevel_title = mfb_safe_title_copy(window_title);
+
+    if (window_data_specific->toplevel_title != NULL) {
+        xdg_toplevel_set_title(window_data_specific->toplevel, window_data_specific->toplevel_title);
+    }
+#endif
+
     xdg_toplevel_add_listener(window_data_specific->toplevel, &toplevel_listener, window_data);
 
     // Commit without a buffer to trigger initial configure event
@@ -3974,6 +3996,7 @@ mfb_set_title(struct mfb_window *window, const char *title) {
     }
 
     kUnused(window_data);
+
 #ifdef MINIFB_HAS_LIBDECOR
     if (window_data_specific->display != NULL &&
         wayland_libdecor_set_title(window_data_specific, title) == true) {
@@ -3987,13 +4010,78 @@ mfb_set_title(struct mfb_window *window, const char *title) {
         return;
     }
 
+#ifdef MINIFB_HAS_LIBDECOR
     char *safe_title = mfb_safe_title_copy(title);
 
     if (safe_title != NULL) {
         xdg_toplevel_set_title(window_data_specific->toplevel, safe_title);
         free(safe_title);
     }
+#else
+    if (window_data_specific->toplevel_title != NULL) {
+        free(window_data_specific->toplevel_title);
+        window_data_specific->toplevel_title = NULL;
+    }
+
+    window_data_specific->toplevel_title = mfb_safe_title_copy(title);
+
+    if (window_data_specific->toplevel_title != NULL) {
+        xdg_toplevel_set_title(window_data_specific->toplevel, window_data_specific->toplevel_title);
+    }
+#endif
+
     flush_request(window_data_specific->display, "title update");
+}
+
+//-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    SWindowData *window_data;
+    SWindowData_Way *window_data_specific;
+
+    if (title != 0x0 && title_size <= 0) {
+        return MFB_STRING_INVALID_ARGUMENT;
+    }
+
+    if (get_window_data(window, __func__, &window_data, &window_data_specific) == false) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    kUnused(window_data);
+
+#ifdef MINIFB_HAS_LIBDECOR
+    const char *src_title = NULL;
+
+    if (wayland_libdecor_get_title(window_data_specific, &src_title) == false || src_title == NULL) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+#else
+    // Wayland doesn't provide a way to query the window title.
+    // So we return the cached title if available.
+    const char *src_title = window_data_specific->toplevel_title;
+
+    if (src_title == NULL) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+#endif
+
+    // This might be bad if the source title isn't properly null-terminated.
+    // strlen is used unconditionally in other places in the code anyway (so this is at least consistent).
+    size_t src_length = strlen(src_title);
+
+    if (src_length > INT_MAX) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+
+    if (title != 0x0) {
+        if (src_length >= (size_t) title_size) {
+            return MFB_STRING_BUFFER_TOO_SMALL;
+        }
+        memcpy(title, src_title, src_length);
+        title[src_length] = '\0'; // Add the null terminator by ourselves, just to be safe.
+    }
+    
+    return (mfb_string_result) ((int) src_length);
 }
 
 //-------------------------------------

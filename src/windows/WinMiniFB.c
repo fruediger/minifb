@@ -6,6 +6,7 @@
     #include "gl/MiniFB_GL.h"
 #endif
 #include <stdlib.h>
+#include <limits.h>
 
 // Copied (and modified) from Windows Kit 10 to avoid setting _WIN32_WINNT to a higher version
 //-------------------------------------
@@ -1449,6 +1450,94 @@ mfb_set_title(struct mfb_window *window, const char *title) {
         SetWindowTextW(window_data_specific->window, wide_title);
         free(wide_title);
     }
+}
+
+//-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    if (window == 0x0) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    if (title != 0x0 && title_size <= 0) {
+        return MFB_STRING_INVALID_ARGUMENT;
+    }
+
+    SWindowData *window_data = (SWindowData *) window;
+    SWindowData_Win *window_data_specific = (SWindowData_Win *) window_data->specific;
+    if (window_data_specific == 0x0) {
+        return MFB_STRING_INVALID_WINDOW;
+    }
+
+    SetLastError(0);
+    int wlength = GetWindowTextLengthW(window_data_specific->window);
+
+    if (wlength < 0) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+    
+    if (wlength == 0) {
+        if (GetLastError() != 0) {
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+
+        if (title != 0x0) {
+            title[0] = '\0';
+        }
+
+        return MFB_STRING_EMPTY;
+    }
+
+    // On Windows, we always retrieve the window title, regardless of whether the user just wants to know the length.
+    // That's because the title is provided as UTF-16, and we want to report the correct length in UTF-8 to the user.
+
+    if (wlength == INT_MAX) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+    wlength += 1; // null-terminator
+    WCHAR *wide = (WCHAR *) malloc(((size_t) wlength) * sizeof(WCHAR));
+    if (wide == NULL) {
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+
+    SetLastError(0);
+    wlength = GetWindowTextW(window_data_specific->window, wide, wlength);
+
+    if (wlength < 0) {
+        free(wide);
+        return MFB_STRING_INTERNAL_ERROR;
+    }
+
+    if (wlength == 0) {
+        if (GetLastError() != 0) {
+            free(wide);
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+
+        if (title != 0x0) {
+            title[0] = '\0';
+        }
+
+        free(wide);
+        return MFB_STRING_EMPTY;
+    }
+
+    int result = WideCharToMultiByte(CP_UTF8, 0, wide, -1, title, (title != 0x0) ? title_size : 0, NULL, NULL);
+
+    if (result <= 0) {
+        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+            free(wide);
+            return MFB_STRING_BUFFER_TOO_SMALL;
+        } else {
+            free(wide);
+            return MFB_STRING_INTERNAL_ERROR;
+        }
+    }
+
+    free(wide);    
+
+    // Result contains the length of the converted UTF-8 string, including the null terminator.
+    return (mfb_string_result) (result - 1);
 }
 
 //-------------------------------------

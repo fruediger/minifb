@@ -137,6 +137,11 @@ typedef struct {
     // null in that case.
     struct libdecor         *libdecor_context;
     struct libdecor_frame   *libdecor_frame;
+#else
+    // When libdecor is not used/available, we need to keep track of the
+    // xdg_toplevel's title ourselves, because Wayland does not provide
+    // a way to query it back from the compositor.
+    char                    *toplevel_title;
 #endif
 
     uint32_t                compositor_id;
