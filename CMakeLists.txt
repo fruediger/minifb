@@ -78,6 +78,9 @@ if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy optio
         cmake_dependent_option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON
             "NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN" OFF)
 
+        cmake_dependent_option(MINIFB_BUILD_STATIC_LIB_VERSION_INFO "Build version info into the static .lib too (only for non-shared Windows builds; in any case, version information will most likely not be propagated into the final binary)" OFF
+            "WIN32 AND NOT MINIFB_BUILD_SHARED" OFF)
+
         cmake_dependent_option(MINIFB_USE_METAL_API "Build the project using Metal API code" ON
             "MACOS" OFF)
         cmake_dependent_option(MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)" OFF
@@ -113,6 +116,12 @@ if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy optio
             option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON)
         else()
             set(MINIFB_BUILD_VERSION_INFO OFF)
+        endif()
+
+        if (WIN32 AND NOT MINIFB_BUILD_SHARED)
+            option(MINIFB_BUILD_STATIC_LIB_VERSION_INFO "Build version info into the static .lib too (only for non-shared Windows builds)" OFF)
+        else()
+            set(MINIFB_BUILD_STATIC_LIB_VERSION_INFO OFF)
         endif()
 
         if (MACOS)
@@ -151,10 +160,15 @@ if (MINIFB_BUILD_SHARED AND (DJGPP OR IOS OR EMSCRIPTEN))
     set(MINIFB_BUILD_SHARED OFF)
 endif()
 
+if (WIN32 AND MINIFB_BUILD_SHARED AND MINIFB_BUILD_STATIC_LIB_VERSION_INFO)
+    message(WARNING "MINIFB_BUILD_STATIC_LIB_VERSION_INFO is only supported for non-shared Windows builds; ignoring it")
+    set(MINIFB_BUILD_STATIC_LIB_VERSION_INFO OFF)
+endif()
+
 # Generated sources and headers
 #--------------------------------------
 
-# directory to add generated headers (created during configuration)
+# directory to add generated headers and resource files (created during configuration)
 set(MINIFB_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${MINIFB_GENERATED_INCLUDE_DIR}")
 
@@ -178,6 +192,35 @@ configure_file(
     "${MINIFB_GENERATED_INCLUDE_DIR}/minifb_version.h"
     @ONLY
 )
+
+# generate the Windows version info resource file (if necessary)
+if (WIN32 AND (MINIFB_BUILD_SHARED OR MINIFB_BUILD_STATIC_LIB_VERSION_INFO))
+    if (MINIFB_BUILD_SHARED)
+        set(MINIFB_RC_FILETYPE "VFT_DLL")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_SHARED_LIBRARY_PREFIX}minifb${CMAKE_SHARED_LIBRARY_SUFFIX}" # hardcoding the "minifb" part of the filename for now
+        )
+    else()
+        set(MINIFB_RC_FILETYPE "VFT_STATIC_LIB")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_STATIC_LIBRARY_PREFIX}minifb${CMAKE_STATIC_LIBRARY_SUFFIX}" # hardcoding the "minifb" part of the filename for now
+        )
+    endif()
+
+    set(MINIFB_RC_PRODUCT_VERSION_SUFFIX "")
+    if (NOT MINIFB_GIT_SHA STREQUAL "" AND NOT MINIFB_GIT_SHA STREQUAL "unknown")
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "-${MINIFB_GIT_SHA}")
+    endif()
+    if (MINIFB_GIT_DIRTY)
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "-dirty")
+    endif()
+
+    configure_file(
+        src/windows/version.rc.in
+        "${MINIFB_GENERATED_INCLUDE_DIR}/version.rc"
+        @ONLY
+    )
+endif()
 
 # Sources
 #--------------------------------------
@@ -208,6 +251,10 @@ set(SrcWindows
     src/windows/WinMiniFB.c
     src/windows/WindowData_Win.h
 )
+
+if (WIN32 AND (MINIFB_BUILD_SHARED OR MINIFB_BUILD_STATIC_LIB_VERSION_INFO))
+    list(APPEND SrcWindows "${MINIFB_GENERATED_INCLUDE_DIR}/version.rc")
+endif()
 
 #--
 set(SrcMacOS
