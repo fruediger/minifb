@@ -38,9 +38,133 @@ include("cmake/minifb_cmake_helpers.cmake")
 # use IDE folders in build systems that support it. enabled by default in cmake 3.26+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Options
+#--------------------------------------
+option(MINIFB_BUILD_EXAMPLES "Build minifb example programs" ON)
+option(MINIFB_BUILD_TESTS "Build interactive minifb test programs" ON)
+option(MINIFB_AVOID_CPP_HEADERS "Avoid including C++ Headers" OFF)
+
+# purely for internal use, never exposed to the user
+set(MINIFB_USE_X11_API OFF)
+
+# unfortunatly these old deprecated options can't fit nicely into dependent options due to our custom function, but when we remove these, we can remove this whole block
+if (MACOS)
+    minifb_apply_deprecated_option(USE_METAL_API MINIFB_USE_METAL_API "Build the project using Metal API code")
+    minifb_apply_deprecated_option(USE_INVERTED_Y_ON_MACOS MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)")
+elseif (LINUX)
+    minifb_apply_deprecated_option(USE_WAYLAND_API MINIFB_USE_WAYLAND_API "Build the project using Wayland API code")
+    if (NOT MINIFB_USE_WAYLAND_API)
+        set(MINIFB_USE_X11_API ON)
+        minifb_apply_deprecated_option(USE_OPENGL_API MINIFB_USE_OPENGL_API "Build the project using OpenGL API code")
+    endif()
+elseif (WIN32)
+    minifb_apply_deprecated_option(USE_OPENGL_API MINIFB_USE_OPENGL_API "Build the project using OpenGL API code")
+endif()
+
+if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy options are used to prevent conflicts
+
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+
+        # requires 3.22+ to use full condition syntax, technically could use in 3.16, but it would be a lot worse
+        include(CMakeDependentOption)
+
+        # cmake_dependent_option is used to create a default value for options in case their specific condition isn't met.
+        # the first 3 args are the same as a normal option(), but the 4th is a condition, where if it's true, expose the option, and if it isn't, the 5th argument is a default value to use.
+        # setting the default value lets us de-nest `if(<platform>) if(<option>)` type stuff, into just `if(<option>)`.
+
+        cmake_dependent_option(MINIFB_BUILD_SHARED "Build minifb as a shared library" OFF
+            "NOT DJGPP AND NOT IOS AND NOT EMSCRIPTEN" OFF)
+
+        cmake_dependent_option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON
+            "NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN" OFF)
+
+        cmake_dependent_option(MINIFB_USE_METAL_API "Build the project using Metal API code" ON
+            "MACOS" OFF)
+        cmake_dependent_option(MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)" OFF
+            "MACOS" OFF)
+
+        cmake_dependent_option(MINIFB_USE_WAYLAND_API "Build the project using Wayland API code" OFF
+            "LINUX" OFF)
+
+        if (NOT MINIFB_USE_WAYLAND_API AND LINUX)
+            set(MINIFB_USE_X11_API ON)
+        endif()
+
+        cmake_dependent_option(MINIFB_USE_OPENGL_API "Build the project using OpenGL API code" ON
+            "MINIFB_USE_X11_API OR WIN32" OFF)
+
+        cmake_dependent_option(MINIFB_X11_USE_IME "Use an X11 input method (XIM) for text input" OFF
+            "MINIFB_USE_X11_API" OFF)
+
+    else()
+
+        # even if an `option()` isn't reached, if it's been reached in previous configurations then the old value still exists as a cache variable
+        # this means it can still be seen and edited by tools such as cmake-gui, without any indication that it's not meant to be enabled
+        # this can lead to cases where two conflicting options are active, so we need to manually `set()` values OFF if they're not reached
+        # dependent options fix this, which is why they should be prioritised if available
+
+        if (NOT DJGPP AND NOT IOS AND NOT EMSCRIPTEN)
+            option(MINIFB_BUILD_SHARED "Build minifb as a shared library" OFF)
+        else()
+            set(MINIFB_BUILD_SHARED OFF)
+        endif()
+
+        if (NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN)
+            option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON)
+        else()
+            set(MINIFB_BUILD_VERSION_INFO OFF)
+        endif()
+
+        if (MACOS)
+            option(MINIFB_USE_METAL_API "Build the project using Metal API code" ON)
+            option(MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)" OFF)
+        else()
+            set(MINIFB_USE_METAL_API OFF)
+            set(MINIFB_USE_INVERTED_Y_ON_MACOS OFF)
+        endif()
+
+        if (LINUX)
+            option(MINIFB_USE_WAYLAND_API "Build the project using Wayland API code" OFF)
+        else()
+            set(MINIFB_USE_WAYLAND_API OFF)
+            set(MINIFB_USE_X11_API ON)
+        endif()
+
+        if (WIN32 OR MINIFB_USE_X11_API)
+            option(MINIFB_USE_OPENGL_API "Build the project using OpenGL API code" ON)
+        else()
+            set(MINIFB_USE_OPENGL_API OFF)
+        endif()
+
+        if (MINIFB_USE_X11_API)
+            option(MINIFB_X11_USE_IME "Use an X11 input method (XIM) for text input" OFF)
+        else()
+            set(MINIFB_X11_USE_IME OFF)
+        endif()
+
+    endif()
+
+endif()
+
+if (MINIFB_BUILD_SHARED AND (DJGPP OR IOS OR EMSCRIPTEN))
+    message(WARNING "MINIFB_BUILD_SHARED is not supported for this target; forcing it OFF")
+    set(MINIFB_BUILD_SHARED OFF)
+endif()
+
+# Generated sources and headers
+#--------------------------------------
+
 # directory to add generated headers (created during configuration)
 set(MINIFB_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 file(MAKE_DIRECTORY "${MINIFB_GENERATED_INCLUDE_DIR}")
+
+# generate the export header from the template (.in)
+set(MFB_SHARED_BUILD ${MINIFB_BUILD_SHARED})
+configure_file(
+    include/minifb_export.h.in
+    "${MINIFB_GENERATED_INCLUDE_DIR}/minifb_export.h"
+    @ONLY
+)
 
 # generate the version header from the templace (.in)
 minifb_compute_git_metadata(
@@ -66,6 +190,7 @@ set(SrcLib
     include/MiniFB_types.h
 
     # remember to include generated headers as source files
+    "${MINIFB_GENERATED_INCLUDE_DIR}/minifb_export.h"
     "${MINIFB_GENERATED_INCLUDE_DIR}/minifb_version.h"
 
     src/MiniFB_common.c
@@ -170,105 +295,6 @@ set(SrcDOS
     src/dos/vesa.c
 )
 
-# Options
-#--------------------------------------
-option(MINIFB_BUILD_EXAMPLES "Build minifb example programs" ON)
-option(MINIFB_BUILD_TESTS "Build interactive minifb test programs" ON)
-option(MINIFB_AVOID_CPP_HEADERS "Avoid including C++ Headers" OFF)
-
-# purely for internal use, never exposed to the user
-set(MINIFB_USE_X11_API OFF)
-
-# unfortunatly these old deprecated options can't fit nicely into dependent options due to our custom function, but when we remove these, we can remove this whole block
-if (MACOS)
-    minifb_apply_deprecated_option(USE_METAL_API MINIFB_USE_METAL_API "Build the project using Metal API code")
-    minifb_apply_deprecated_option(USE_INVERTED_Y_ON_MACOS MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)")
-elseif (LINUX)
-    minifb_apply_deprecated_option(USE_WAYLAND_API MINIFB_USE_WAYLAND_API "Build the project using Wayland API code")
-    if (NOT MINIFB_USE_WAYLAND_API)
-        set(MINIFB_USE_X11_API ON)
-        minifb_apply_deprecated_option(USE_OPENGL_API MINIFB_USE_OPENGL_API "Build the project using OpenGL API code")
-    endif()
-elseif (WIN32)
-    minifb_apply_deprecated_option(USE_OPENGL_API MINIFB_USE_OPENGL_API "Build the project using OpenGL API code")
-endif()
-
-if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy options are used to prevent conflicts
-
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
-
-    # requires 3.22+ to use full condition syntax, technically could use in 3.16, but it would be a lot worse
-    include(CMakeDependentOption)
-
-    # cmake_dependent_option is used to create a default value for options in case their specific condition isn't met.
-    # the first 3 args are the same as a normal option(), but the 4th is a condition, where if it's true, expose the option, and if it isn't, the 5th argument is a default value to use.
-    # setting the default value lets us de-nest `if(<platform>) if(<option>)` type stuff, into just `if(<option>)`.
-
-    cmake_dependent_option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON
-        "NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN" OFF)
-
-    cmake_dependent_option(MINIFB_USE_METAL_API "Build the project using Metal API code" ON
-        "MACOS" OFF)
-    cmake_dependent_option(MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)" OFF
-        "MACOS" OFF)
-
-    cmake_dependent_option(MINIFB_USE_WAYLAND_API "Build the project using Wayland API code" OFF
-        "LINUX" OFF)
-
-    if (NOT MINIFB_USE_WAYLAND_API AND LINUX)
-        set(MINIFB_USE_X11_API ON)
-    endif()
-
-    cmake_dependent_option(MINIFB_USE_OPENGL_API "Build the project using OpenGL API code" ON
-        "MINIFB_USE_X11_API OR WIN32" OFF)
-
-    cmake_dependent_option(MINIFB_X11_USE_IME "Use an X11 input method (XIM) for text input" OFF
-        "MINIFB_USE_X11_API" OFF)
-
-else()
-
-    # even if an `option()` isn't reached, if it's been reached in previous configurations then the old value still exists as a cache variable
-    # this means it can still be seen and edited by tools such as cmake-gui, without any indication that it's not meant to be enabled
-    # this can lead to cases where two conflicting options are active, so we need to manually `set()` values OFF if they're not reached
-    # dependent options fix this, which is why they should be prioritised if available
-
-    if (NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN)
-        option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON)
-    else()
-        set(MINIFB_BUILD_VERSION_INFO OFF)
-    endif()
-
-    if (MACOS)
-        option(MINIFB_USE_METAL_API "Build the project using Metal API code" ON)
-        option(MINIFB_USE_INVERTED_Y_ON_MACOS "Use default mouse position: (0, 0) at (left, down)" OFF)
-    else()
-        set(MINIFB_USE_METAL_API OFF)
-        set(MINIFB_USE_INVERTED_Y_ON_MACOS OFF)
-    endif()
-
-    if (LINUX)
-        option(MINIFB_USE_WAYLAND_API "Build the project using Wayland API code" OFF)
-    else()
-        set(MINIFB_USE_WAYLAND_API OFF)
-        set(MINIFB_USE_X11_API ON)
-    endif()
-
-    if (WIN32 OR MINIFB_USE_X11_API)
-        option(MINIFB_USE_OPENGL_API "Build the project using OpenGL API code" ON)
-    else()
-        set(MINIFB_USE_OPENGL_API OFF)
-    endif()
-
-    if (MINIFB_USE_X11_API)
-        option(MINIFB_X11_USE_IME "Use an X11 input method (XIM) for text input" OFF)
-    else()
-        set(MINIFB_X11_USE_IME OFF)
-    endif()
-
-endif()
-
-endif()
-
 # Compilation configuration (will be ran on library and examples)
 #--------------------------------------
 function(minifb_configure_target target)
@@ -346,11 +372,29 @@ endfunction()
 
 # Create library target and configure
 #--------------------------------------
-add_library(minifb STATIC ${SrcLib})
+if (MINIFB_BUILD_SHARED)
+    add_library(minifb SHARED ${SrcLib})
+else()
+    add_library(minifb STATIC ${SrcLib})
+endif()
 add_library(minifb::minifb ALIAS minifb) # cmake installing will install the "minifb::" namespace
 
 set_property(TARGET minifb PROPERTY FOLDER "Libs")
 minifb_configure_target(minifb)
+
+if (MINIFB_BUILD_SHARED)
+    if (NOT WIN32)
+        set_target_properties(minifb PROPERTIES
+            C_VISIBILITY_PRESET   hidden
+            CXX_VISIBILITY_PRESET hidden
+        ) # the MFB_EXPORT macro will set the exported symbol's visibility to default for those platforms
+    endif()
+
+    set_target_properties(minifb PROPERTIES
+        VERSION   ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+endif()
 
 # headers required for users (differs depending on if it's been built or installed)
 target_include_directories(minifb PUBLIC
@@ -514,6 +558,7 @@ function(minifb_add_example)
     add_executable(${arg_NAME} ${arg_SOURCE})
     target_link_libraries(${arg_NAME} PRIVATE minifb)
     minifb_configure_target(${arg_NAME})
+    minifb_copy_runtime_shared_libraries(${arg_NAME})
 
     if (arg_DOS_NAME)
         minifb_set_dos_name(${arg_NAME} ${arg_DOS_NAME})
@@ -627,7 +672,11 @@ endif()
 #--------------------------------------
 
 # install the library, and all headers
-install(TARGETS minifb EXPORT minifb)
+install(TARGETS minifb EXPORT minifb
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
 install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include/" "${MINIFB_GENERATED_INCLUDE_DIR}"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"

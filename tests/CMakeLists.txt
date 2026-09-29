@@ -16,6 +16,7 @@ PRIVATE
     minifb
 )
 minifb_configure_target(mouse_events_test)
+minifb_copy_runtime_shared_libraries(mouse_events_test)
 minifb_set_dos_name(mouse_events_test mouseevt)
 
 set_property(TARGET mouse_events_test PROPERTY FOLDER "Tests")
@@ -28,6 +29,7 @@ PRIVATE
     minifb
 )
 minifb_configure_target(keyboard_events_test)
+minifb_copy_runtime_shared_libraries(keyboard_events_test)
 minifb_set_dos_name(keyboard_events_test keyevent)
 
 set_property(TARGET keyboard_events_test PROPERTY FOLDER "Tests")
@@ -44,6 +46,7 @@ if (NOT DJGPP)
         minifb
     )
     minifb_configure_target(window_events_test)
+    minifb_copy_runtime_shared_libraries(window_events_test)
 
     set_property(TARGET window_events_test PROPERTY FOLDER "Tests")
 

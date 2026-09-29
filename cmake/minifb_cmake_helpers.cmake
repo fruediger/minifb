@@ -72,3 +72,24 @@ function(minifb_set_dos_name target short_name)
 
     set_target_properties(${target} PROPERTIES OUTPUT_NAME "${short_name}")
 endfunction()
+
+function(minifb_copy_runtime_shared_libraries target)
+    if (WIN32)
+        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.21)
+            add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "$<TARGET_RUNTIME_DLLS:${target}>" "$<TARGET_FILE_DIR:${target}>"
+                COMMAND_EXPAND_LISTS
+                )
+        elseif (MINIFB_BUILD_SHARED)
+            # this only copies the target file itself (the minifb dll)
+            # if there are ever going to be additional runtime shared libraries,
+            # we might need to extend this approach or come up with an entirely different solution
+            add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "$<TARGET_FILE:minifb>" "$<TARGET_FILE_DIR:${target}>"
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
+    endif()
+endfunction()
