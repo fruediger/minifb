@@ -67,15 +67,15 @@ class mfb_stub {
     mfb_stub() : m_window(NULL) {}
 
     friend struct mfb_stub_vector;
-    friend void mfb_set_active_callback      (std::function<void(struct mfb_window *window, bool)>                          func, struct mfb_window *window);
-    friend void mfb_set_resize_callback      (std::function<void(struct mfb_window *, int, int)>                            func, struct mfb_window *window);
-    friend void mfb_set_close_callback       (std::function<bool(struct mfb_window *)>                                      func, struct mfb_window *window);
-    friend void mfb_set_keyboard_callback    (std::function<void(struct mfb_window *, mfb_key, mfb_key_mod, bool)>          func, struct mfb_window *window);
-    friend void mfb_set_char_input_callback  (std::function<void(struct mfb_window *, unsigned int)>                        func, struct mfb_window *window);
-    friend void mfb_set_mouse_button_callback(std::function<void(struct mfb_window *, mfb_mouse_button, mfb_key_mod, bool)> func, struct mfb_window *window);
-    friend void mfb_set_mouse_move_callback  (std::function<void(struct mfb_window *, int, int)>                            func, struct mfb_window *window);
-    friend void mfb_set_mouse_scroll_callback(std::function<void(struct mfb_window *, mfb_key_mod, float, float)>           func, struct mfb_window *window);
-    friend void mfb_set_mouse_enter_callback (std::function<void(struct mfb_window *, bool)>                                func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_active_callback      (std::function<void(struct mfb_window *window, bool)>                          func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_resize_callback      (std::function<void(struct mfb_window *, int, int)>                            func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_close_callback       (std::function<bool(struct mfb_window *)>                                      func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_keyboard_callback    (std::function<void(struct mfb_window *, mfb_key, mfb_key_mod, bool)>          func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_char_input_callback  (std::function<void(struct mfb_window *, unsigned int)>                        func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_mouse_button_callback(std::function<void(struct mfb_window *, mfb_mouse_button, mfb_key_mod, bool)> func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_mouse_move_callback  (std::function<void(struct mfb_window *, int, int)>                            func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_mouse_scroll_callback(std::function<void(struct mfb_window *, mfb_key_mod, float, float)>           func, struct mfb_window *window);
+    MFB_EXPORT friend void mfb_set_mouse_enter_callback (std::function<void(struct mfb_window *, bool)>                                func, struct mfb_window *window);
 
     template <class T>
     friend void mfb_set_active_callback(struct mfb_window *window, T *obj, void (T::*method)(struct mfb_window *, bool));
