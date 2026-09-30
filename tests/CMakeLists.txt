@@ -15,6 +15,10 @@ target_link_libraries(mouse_events_test
 PRIVATE
     minifb
 )
+if (MINIFB_MATH_LIBRARY)
+    # mouse_events_test uses fabsf
+    target_link_libraries(mouse_events_test PRIVATE ${MINIFB_MATH_LIBRARY})
+endif()
 minifb_configure_target(mouse_events_test)
 minifb_copy_runtime_shared_libraries(mouse_events_test)
 minifb_set_dos_name(mouse_events_test mouseevt)

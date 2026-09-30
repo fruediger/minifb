@@ -688,6 +688,11 @@ function(minifb_add_example)
     endif()
 endfunction()
 
+# Technically that's only needed when building the examples, tests, or both together with a SHARED main library
+# on platforms where the C runtime has its math functions as an external dependency.
+# But it can't really hurt to do so.
+find_library(MINIFB_MATH_LIBRARY m)
+
 if (MINIFB_BUILD_VERSION_INFO)
     minifb_add_example(NAME minifb_version_info SOURCE examples/version_info.c DOS_NAME verinfo)
 endif()
@@ -698,6 +703,10 @@ if (MINIFB_BUILD_EXAMPLES)
         minifb_add_example(NAME input_events         SOURCE examples/input_events.c         DOS_NAME inpevent)
         minifb_add_example(NAME hidpi                SOURCE examples/hidpi.c)
         minifb_add_example(NAME multiple_windows     SOURCE examples/multiple_windows.c     DOS_NAME multiwin)
+        if (MINIFB_MATH_LIBRARY)
+            # multiple_windows uses sinf and cosf
+            target_link_libraries(multiple_windows PRIVATE ${MINIFB_MATH_LIBRARY})
+        endif()
         minifb_add_example(NAME timer                SOURCE examples/timer.c)
         if (NOT EMSCRIPTEN)
             minifb_add_example(NAME fullscreen       SOURCE examples/fullscreen.c       DOS_NAME fullscrn)
