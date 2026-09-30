@@ -746,9 +746,14 @@ install(TARGETS minifb EXPORT minifb
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
-install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include/" "${MINIFB_GENERATED_INCLUDE_DIR}"
+install(
+    DIRECTORY
+        "${CMAKE_CURRENT_LIST_DIR}/include/"
+        "${MINIFB_GENERATED_INCLUDE_DIR}/"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
 )
 
 # generate and install files required to find_package minifb
