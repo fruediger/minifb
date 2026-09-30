@@ -12,6 +12,7 @@ name: Shared Library Build Test (manual)
 
 on:
   workflow_dispatch:
+  push: # This is just here to make the workflow visible. Once the workflow ran once, it can be removed as the workflow should now be visible.
 
 jobs:
   build-and-smoke-test:
