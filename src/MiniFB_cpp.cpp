@@ -1,6 +1,5 @@
 #include <MiniFB_cpp.h>
 #include <MiniFB_enums.h>
-#include <minifb_export.h>
 #include <vector>
 
 struct mfb_stub_vector {
@@ -150,7 +149,6 @@ mfb_stub::mouse_enter_stub(struct mfb_window *window, bool is_inside) {
 //-------------------------------------
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_active_callback(std::function<void(struct mfb_window *, bool)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -161,7 +159,6 @@ mfb_set_active_callback(std::function<void(struct mfb_window *, bool)> func, str
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_resize_callback(std::function<void(struct mfb_window *, int, int)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -172,7 +169,6 @@ mfb_set_resize_callback(std::function<void(struct mfb_window *, int, int)> func,
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_close_callback(std::function<bool(struct mfb_window *)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -183,7 +179,6 @@ mfb_set_close_callback(std::function<bool(struct mfb_window *)> func, struct mfb
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_keyboard_callback(std::function<void(struct mfb_window *, mfb_key, mfb_key_mod, bool)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -194,7 +189,6 @@ mfb_set_keyboard_callback(std::function<void(struct mfb_window *, mfb_key, mfb_k
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_char_input_callback(std::function<void(struct mfb_window *, unsigned int)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -205,7 +199,6 @@ mfb_set_char_input_callback(std::function<void(struct mfb_window *, unsigned int
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_mouse_button_callback(std::function<void(struct mfb_window *, mfb_mouse_button, mfb_key_mod, bool)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -216,7 +209,6 @@ mfb_set_mouse_button_callback(std::function<void(struct mfb_window *, mfb_mouse_
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_mouse_move_callback(std::function<void(struct mfb_window *, int, int)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -227,7 +219,6 @@ mfb_set_mouse_move_callback(std::function<void(struct mfb_window *, int, int)> f
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_mouse_scroll_callback(std::function<void(struct mfb_window *, mfb_key_mod, float, float)> func, struct mfb_window *window) {
     using namespace std::placeholders;
@@ -238,7 +229,6 @@ mfb_set_mouse_scroll_callback(std::function<void(struct mfb_window *, mfb_key_mo
 }
 
 //-------------------------------------
-MFB_EXPORT
 void
 mfb_set_mouse_enter_callback(std::function<void(struct mfb_window *, bool)> func, struct mfb_window *window) {
     using namespace std::placeholders;
