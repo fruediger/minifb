@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include "MiniFB_types.h"
 #include "MiniFB_macros.h"
 #include "minifb_export.h"
@@ -138,6 +139,14 @@ MFB_EXPORT double              mfb_timer_get_resolution(void);
 MFB_EXPORT void                mfb_set_logger(mfb_log_func user_logger);
 MFB_EXPORT void                mfb_set_log_level(mfb_log_level level);
 MFB_EXPORT void                mfb_log(const mfb_log_info *info, const char *tag, const char *message, ...);
+
+// Version information (optional; can be queried at runtime if available)
+#if defined(MFB_HAS_RUNTIME_VERSION) && MFB_HAS_RUNTIME_VERSION
+// Use the MFB_VERSION_GET_MAJOR, MFB_VERSION_GET_MINOR, and MFB_VERSION_GET_PATCH macros
+// to extract version components from the value returned by mfb_get_version()
+MFB_EXPORT uint64_t            mfb_get_version(void);
+MFB_EXPORT const char *        mfb_get_version_variant(void);
+#endif
 
 //-------------------------------------
 

@@ -43,6 +43,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(MINIFB_BUILD_EXAMPLES "Build minifb example programs" ON)
 option(MINIFB_BUILD_TESTS "Build interactive minifb test programs" ON)
 option(MINIFB_AVOID_CPP_HEADERS "Avoid including C++ Headers" OFF)
+option(MINIFB_USE_RUNTIME_VERSION "Builds with support for version information querying at runtime; sets MFB_HAS_RUNTIME_VERSION to 1" OFF)
 
 # purely for internal use, never exposed to the user
 set(MINIFB_USE_X11_API OFF)
@@ -245,6 +246,10 @@ set(SrcLib
     src/MiniFB_utf8.h
     src/WindowData.h
 )
+
+if (MINIFB_USE_RUNTIME_VERSION)
+    list(APPEND SrcLib "src/MiniFB_runtime_version.c")
+endif()
 
 #--
 set(SrcWindows
@@ -453,6 +458,12 @@ target_include_directories(minifb PRIVATE src)  # include internal headers
 
 # conditional main library target configuration
 
+if (MINIFB_USE_RUNTIME_VERSION)
+    target_compile_definitions(minifb PUBLIC MFB_HAS_RUNTIME_VERSION=1)
+else()
+    target_compile_definitions(minifb PUBLIC MFB_HAS_RUNTIME_VERSION=0)
+endif()
+
 if (MINIFB_USE_INVERTED_Y_ON_MACOS)
     target_compile_definitions(minifb PRIVATE USE_INVERTED_Y_ON_MACOS)
 endif()
@@ -477,9 +488,11 @@ elseif (MACOS)
     target_sources(minifb PRIVATE ${SrcMacOS})
 
 elseif (MINIFB_USE_WAYLAND_API)
+    target_compile_definitions(minifb PRIVATE USE_WAYLAND_API)
     target_sources(minifb PRIVATE ${SrcWayland})
 
 elseif (MINIFB_USE_X11_API)
+    target_compile_definitions(minifb PRIVATE USE_X11_API)
     target_sources(minifb PRIVATE ${SrcX11})
 
 elseif (EMSCRIPTEN)
