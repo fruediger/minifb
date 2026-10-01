@@ -15,9 +15,9 @@ target_link_libraries(mouse_events_test
 PRIVATE
     minifb
 )
-if (MINIFB_MATH_LIBRARY)
+if (Math)
     # mouse_events_test uses fabsf
-    target_link_libraries(mouse_events_test PRIVATE ${MINIFB_MATH_LIBRARY})
+    target_link_libraries(mouse_events_test PRIVATE ${Math})
 endif()
 minifb_configure_target(mouse_events_test)
 minifb_copy_runtime_shared_libraries(mouse_events_test)
