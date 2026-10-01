@@ -504,6 +504,16 @@ endif()
 
 # Link main library
 #--------------------------------------
+
+# It can't really hurt to look for libm (or whatever the platform's math library is) unconditionally.
+# All platforms supported by minifb should have a math library available, either as a dedicated dependency (libm)
+# or as part of the standard C library (e.g., on Windows) where the Math variable will not be set (that's fine, we don't need to explicitly link against it in that case).
+find_library(Math m)
+if (Math AND X11_Xrandr_FOUND)
+    # src/x11/X11MiniFB_scale_funcs.c:get_scale_from_xrandr uses sqrtf
+    target_link_libraries(minifb PRIVATE ${Math})
+endif()
+
 if (MINIFB_USE_OPENGL_API)
     find_package(OpenGL)
     if (NOT OpenGL_FOUND)
@@ -688,11 +698,6 @@ function(minifb_add_example)
     endif()
 endfunction()
 
-# Technically that's only needed when building the examples, tests, or both together with a SHARED main library
-# on platforms where the C runtime has its math functions as an external dependency.
-# But it can't really hurt to do so.
-find_library(MINIFB_MATH_LIBRARY m)
-
 if (MINIFB_BUILD_VERSION_INFO)
     minifb_add_example(NAME minifb_version_info SOURCE examples/version_info.c DOS_NAME verinfo)
 endif()
@@ -703,9 +708,9 @@ if (MINIFB_BUILD_EXAMPLES)
         minifb_add_example(NAME input_events         SOURCE examples/input_events.c         DOS_NAME inpevent)
         minifb_add_example(NAME hidpi                SOURCE examples/hidpi.c)
         minifb_add_example(NAME multiple_windows     SOURCE examples/multiple_windows.c     DOS_NAME multiwin)
-        if (MINIFB_MATH_LIBRARY)
+        if (Math)
             # multiple_windows uses sinf and cosf
-            target_link_libraries(multiple_windows PRIVATE ${MINIFB_MATH_LIBRARY})
+            target_link_libraries(multiple_windows PRIVATE ${Math})
         endif()
         minifb_add_example(NAME timer                SOURCE examples/timer.c)
         if (NOT EMSCRIPTEN)
