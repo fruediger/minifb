@@ -509,10 +509,6 @@ endif()
 # All platforms supported by minifb should have a math library available, either as a dedicated dependency (libm)
 # or as part of the standard C library (e.g., on Windows) where the Math variable will not be set (that's fine, we don't need to explicitly link against it in that case).
 find_library(Math m)
-if (Math AND X11_Xrandr_FOUND)
-    # src/x11/X11MiniFB_scale_funcs.c:get_scale_from_xrandr uses sqrtf
-    target_link_libraries(minifb PRIVATE ${Math})
-endif()
 
 if (MINIFB_USE_OPENGL_API)
     find_package(OpenGL)
@@ -587,7 +583,11 @@ elseif(MINIFB_USE_X11_API)
 
     if (X11_Xrandr_FOUND)
         target_link_libraries(minifb PRIVATE X11::Xrandr)
-        target_compile_definitions(minifb PRIVATE MINIFB_HAS_XRANDR)
+        target_compile_definitions(minifb PRIVATE MINIFB_HAS_XRANDR)        
+        if (Math)
+            # src/x11/X11MiniFB_scale_funcs.c:get_scale_from_xrandr uses sqrtf
+            target_link_libraries(minifb PRIVATE ${Math})
+        endif()
     endif()
 
     # xkbcommon owns the text side: keysym to Unicode, dead keys and Compose, the same code
