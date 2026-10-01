@@ -96,17 +96,17 @@ class mfb_stub {
     template <class T>
     friend void mfb_set_mouse_enter_callback(struct mfb_window *window, T *obj, void (T::*method)(struct mfb_window *, bool));
 
-    static mfb_stub *get_instance(struct mfb_window *window);
+    MFB_EXPORT static mfb_stub *get_instance(struct mfb_window *window);
 
-    static void active_stub(struct mfb_window *window, bool is_active);
-    static void resize_stub(struct mfb_window *window, int width, int height);
-    static bool close_stub(struct mfb_window *window);
-    static void keyboard_stub(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool is_pressed);
-    static void char_input_stub(struct mfb_window *window, unsigned int);
-    static void mouse_btn_stub(struct mfb_window *window, mfb_mouse_button button, mfb_key_mod mod, bool is_pressed);
-    static void mouse_move_stub(struct mfb_window *window, int x, int y);
-    static void scroll_stub(struct mfb_window *window, mfb_key_mod mod, float delta_x, float delta_y);
-    static void mouse_enter_stub(struct mfb_window *window, bool is_inside);
+    MFB_EXPORT static void active_stub(struct mfb_window *window, bool is_active);
+    MFB_EXPORT static void resize_stub(struct mfb_window *window, int width, int height);
+    MFB_EXPORT static bool close_stub(struct mfb_window *window);
+    MFB_EXPORT static void keyboard_stub(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool is_pressed);
+    MFB_EXPORT static void char_input_stub(struct mfb_window *window, unsigned int);
+    MFB_EXPORT static void mouse_btn_stub(struct mfb_window *window, mfb_mouse_button button, mfb_key_mod mod, bool is_pressed);
+    MFB_EXPORT static void mouse_move_stub(struct mfb_window *window, int x, int y);
+    MFB_EXPORT static void scroll_stub(struct mfb_window *window, mfb_key_mod mod, float delta_x, float delta_y);
+    MFB_EXPORT static void mouse_enter_stub(struct mfb_window *window, bool is_inside);
 
     struct mfb_window                                                           *m_window;
     std::function<void(struct mfb_window *window, bool)>                        m_active;
