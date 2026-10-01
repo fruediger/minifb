@@ -23,7 +23,12 @@ jobs:
         include:
           - name: Windows
             os: windows-latest
-            cmake_args: ""
+            cmake_args: "-DMINIFB_USE_OPENGL_API=OFF"
+            expected_variant: "windows"
+
+          - name: Windows OpenGL
+            os: windows-latest
+            cmake_args: "-DMINIFB_USE_OPENGL_API=ON"
             expected_variant: "windows-opengl"
 
           - name: Linux X11
