@@ -74,7 +74,7 @@ if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy optio
         # setting the default value lets us de-nest `if(<platform>) if(<option>)` type stuff, into just `if(<option>)`.
 
         cmake_dependent_option(MINIFB_BUILD_SHARED "Build minifb as a shared library" OFF
-            "NOT DJGPP AND NOT IOS AND NOT EMSCRIPTEN" OFF)
+            "NOT DJGPP AND NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN" OFF)
 
         cmake_dependent_option(MINIFB_BUILD_VERSION_INFO "Build version info utility" ON
             "NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN" OFF)
@@ -107,7 +107,7 @@ if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy optio
         # this can lead to cases where two conflicting options are active, so we need to manually `set()` values OFF if they're not reached
         # dependent options fix this, which is why they should be prioritised if available
 
-        if (NOT DJGPP AND NOT IOS AND NOT EMSCRIPTEN)
+        if (NOT DJGPP AND NOT IOS AND NOT ANDROID AND NOT EMSCRIPTEN)
             option(MINIFB_BUILD_SHARED "Build minifb as a shared library" OFF)
         else()
             set(MINIFB_BUILD_SHARED OFF)
@@ -156,7 +156,7 @@ if (NOT MINIFB_HAVE_SET_LEGACY_OPTION) # only use new options if no legacy optio
 
 endif()
 
-if (MINIFB_BUILD_SHARED AND (DJGPP OR IOS OR EMSCRIPTEN))
+if (MINIFB_BUILD_SHARED AND (DJGPP OR IOS OR ANDROID OR EMSCRIPTEN))
     message(WARNING "MINIFB_BUILD_SHARED is not supported for this target; forcing it OFF")
     set(MINIFB_BUILD_SHARED OFF)
 endif()

@@ -4,6 +4,16 @@ project(mouse_events_test)
 # tests/android/app/src/main/cpp -> repository root
 set(MINIFB_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../../../..)
 
+# Android target is static minifb only
+set(MFB_SHARED_BUILD OFF)
+
+# MiniFB.h requires this generated header to exist
+configure_file(
+    ${MINIFB_ROOT}/include/minifb_export.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/minifb_export.h
+    @ONLY
+)
+
 # build native_app_glue as a static lib
 add_library(native_app_glue STATIC
     ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
@@ -13,6 +23,7 @@ add_library(minifb STATIC
     ${MINIFB_ROOT}/include/MiniFB.h
     ${MINIFB_ROOT}/include/MiniFB_cpp.h
     ${MINIFB_ROOT}/include/MiniFB_enums.h
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/minifb_export.h
 
     ${MINIFB_ROOT}/src/MiniFB_common.c
     ${MINIFB_ROOT}/src/MiniFB_cpp.cpp
@@ -29,6 +40,7 @@ add_library(minifb STATIC
 target_include_directories(minifb PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
     ${MINIFB_ROOT}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     ${MINIFB_ROOT}/src
 )
 
@@ -46,6 +58,7 @@ target_link_options(mouse_events_test PRIVATE
 target_include_directories(mouse_events_test PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
     ${MINIFB_ROOT}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
 # Export ANativeActivity_onCreate(),
