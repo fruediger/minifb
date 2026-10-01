@@ -95,6 +95,7 @@ jobs:
         shell: bash
         run: >
           cmake -B build -S .
+          -DCMAKE_BUILD_TYPE=Release
           -DMINIFB_BUILD_SHARED=ON
           -DMINIFB_BUILD_TESTS=ON
           -DMINIFB_BUILD_EXAMPLES=ON
@@ -113,6 +114,7 @@ jobs:
         shell: bash
         run: >
           cmake -B smoke-build -S .github/workflows/shared-lib-build-test
+          -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-prefix"
           -DEXPECTED_VERSION_VARIANT="${{ matrix.expected_variant }}"
 
