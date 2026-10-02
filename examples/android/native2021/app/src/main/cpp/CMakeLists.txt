@@ -18,6 +18,16 @@ endif()
 #set(CMAKE_OBJC_FLAGS "${CMAKE_C_FLAGS}")
 #set(CMAKE_OBJCXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+# Android target is static minifb only
+set(MFB_SHARED_BUILD OFF)
+
+# MiniFB.h requires this generated header to exist
+configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/minifb_export.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/minifb_export.h
+    @ONLY
+)
+
 # build native_app_glue as a static lib
 add_library(native_app_glue STATIC
     ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
@@ -27,6 +37,7 @@ add_library(minifb STATIC
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB.h
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB_cpp.h
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB_enums.h
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/minifb_export.h
 
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../src/MiniFB_common.c
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../src/MiniFB_cpp.cpp
@@ -43,6 +54,7 @@ add_library(minifb STATIC
 target_include_directories(minifb PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../src
 )
 
@@ -66,6 +78,7 @@ add_library(noise SHARED
 target_include_directories(noise PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
 # Export ANativeActivity_onCreate(),

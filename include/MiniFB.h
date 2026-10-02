@@ -1,7 +1,9 @@
 #pragma once
 
+#include <stdint.h>
 #include "MiniFB_types.h"
 #include "MiniFB_macros.h"
+#include "minifb_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,8 +11,8 @@ extern "C" {
 
 // Create a window that is used to display the buffer sent into the mfb_update function, returns 0 if fails.
 // If title is NULL or empty, a backend-default title ("minifb") is used.
-struct mfb_window * mfb_open(const char *title, unsigned width, unsigned height);
-struct mfb_window * mfb_open_ex(const char *title, unsigned width, unsigned height, unsigned flags);
+MFB_EXPORT struct mfb_window * mfb_open(const char *title, unsigned width, unsigned height);
+MFB_EXPORT struct mfb_window * mfb_open_ex(const char *title, unsigned width, unsigned height, unsigned flags);
 
 // Update the display
 // Input buffer is assumed to be a 32-bit buffer of the size given in the open call
@@ -36,71 +38,71 @@ struct mfb_window * mfb_open_ex(const char *title, unsigned width, unsigned heig
 // MFB_STATE_OK without presenting that frame and resumes presentation after callback delivery.
 // On Android, mfb_update_ex returns MFB_STATE_OK without rendering when ANativeWindow
 //   is temporarily unavailable during lifecycle transitions (pause / surface lost).
-mfb_update_state    mfb_update(struct mfb_window *window, void *buffer);
+MFB_EXPORT mfb_update_state    mfb_update(struct mfb_window *window, void *buffer);
 
-mfb_update_state    mfb_update_ex(struct mfb_window *window, void *buffer, unsigned width, unsigned height);
+MFB_EXPORT mfb_update_state    mfb_update_ex(struct mfb_window *window, void *buffer, unsigned width, unsigned height);
 
 // Only updates the window events
-mfb_update_state    mfb_update_events(struct mfb_window *window);
+MFB_EXPORT mfb_update_state    mfb_update_events(struct mfb_window *window);
 
 // Close the window
-void                mfb_close(struct mfb_window *window);
+MFB_EXPORT void                mfb_close(struct mfb_window *window);
 
 // Set title
-void                mfb_set_title(struct mfb_window *window, const char *title);
+MFB_EXPORT void                mfb_set_title(struct mfb_window *window, const char *title);
 
 // Set user data
-void                mfb_set_user_data(struct mfb_window *window, void *user_data);
-void *              mfb_get_user_data(struct mfb_window *window);
+MFB_EXPORT void                mfb_set_user_data(struct mfb_window *window, void *user_data);
+MFB_EXPORT void *              mfb_get_user_data(struct mfb_window *window);
 
 // Set viewport in drawable coordinates (same units as mfb_get_window_width/height and resize callback)
-bool                mfb_set_viewport(struct mfb_window *window, unsigned offset_x, unsigned offset_y, unsigned width, unsigned height);
+MFB_EXPORT bool                mfb_set_viewport(struct mfb_window *window, unsigned offset_x, unsigned offset_y, unsigned width, unsigned height);
 // Let mfb calculate the best fit from your framebuffer original size (same drawable coordinate units)
-bool                mfb_set_viewport_best_fit(struct mfb_window *window, unsigned old_width, unsigned old_height);
+MFB_EXPORT bool                mfb_set_viewport_best_fit(struct mfb_window *window, unsigned old_width, unsigned old_height);
 
 // DPI
 // [Deprecated]: Probably a better name will be mfb_get_monitor_scale
 MFB_DEPRECATED("mfb_get_moniter_dpi deprecated, use mfb_get_monitor_scale instead")
-void                mfb_get_monitor_dpi(struct mfb_window *window, float *dpi_x, float *dpi_y);
+MFB_EXPORT void                mfb_get_monitor_dpi(struct mfb_window *window, float *dpi_x, float *dpi_y);
 // Use this instead.
 // Returns monitor/content scale as multipliers (1.0 = 100%).
 // If window is non-NULL, returns the scale of the monitor containing that window.
 // If window is NULL, returns the primary monitor scale on platforms that support it
 // (macOS, Windows, X11, iOS, Web, Android), or 1.0 otherwise (Wayland, DOS).
 // Output pointers may be NULL.
-void                mfb_get_monitor_scale(struct mfb_window *window, float *scale_x, float *scale_y);
+MFB_EXPORT void                mfb_get_monitor_scale(struct mfb_window *window, float *scale_x, float *scale_y);
 
 // Show/hide cursor
-void                mfb_show_cursor(struct mfb_window *window, bool show);
+MFB_EXPORT void                mfb_show_cursor(struct mfb_window *window, bool show);
 
 // Callbacks
-void                mfb_set_active_callback(struct mfb_window *window, mfb_active_func callback);
-void                mfb_set_resize_callback(struct mfb_window *window, mfb_resize_func callback);
-void                mfb_set_close_callback(struct mfb_window *window, mfb_close_func callback);
-void                mfb_set_keyboard_callback(struct mfb_window *window, mfb_keyboard_func callback);
-void                mfb_set_char_input_callback(struct mfb_window *window, mfb_char_input_func callback);
-void                mfb_set_mouse_button_callback(struct mfb_window *window, mfb_mouse_button_func callback);
-void                mfb_set_mouse_move_callback(struct mfb_window *window, mfb_mouse_move_func callback);
-void                mfb_set_mouse_scroll_callback(struct mfb_window *window, mfb_mouse_scroll_func callback);
+MFB_EXPORT void                mfb_set_active_callback(struct mfb_window *window, mfb_active_func callback);
+MFB_EXPORT void                mfb_set_resize_callback(struct mfb_window *window, mfb_resize_func callback);
+MFB_EXPORT void                mfb_set_close_callback(struct mfb_window *window, mfb_close_func callback);
+MFB_EXPORT void                mfb_set_keyboard_callback(struct mfb_window *window, mfb_keyboard_func callback);
+MFB_EXPORT void                mfb_set_char_input_callback(struct mfb_window *window, mfb_char_input_func callback);
+MFB_EXPORT void                mfb_set_mouse_button_callback(struct mfb_window *window, mfb_mouse_button_func callback);
+MFB_EXPORT void                mfb_set_mouse_move_callback(struct mfb_window *window, mfb_mouse_move_func callback);
+MFB_EXPORT void                mfb_set_mouse_scroll_callback(struct mfb_window *window, mfb_mouse_scroll_func callback);
 // Fires when the cursor enters or leaves the window. Never fires on backends without a
 // cursor (iOS, DOS) or when no pointing device is connected (Android).
-void                mfb_set_mouse_enter_callback(struct mfb_window *window, mfb_mouse_enter_func callback);
+MFB_EXPORT void                mfb_set_mouse_enter_callback(struct mfb_window *window, mfb_mouse_enter_func callback);
 
 // Getters
-const char *        mfb_get_key_name(mfb_key key);
+MFB_EXPORT const char *        mfb_get_key_name(mfb_key key);
 
-bool                mfb_is_window_active(struct mfb_window *window);
-bool                mfb_is_mouse_inside(struct mfb_window *window);      // On DOS, true whenever a mouse driver is present.
-unsigned            mfb_get_window_width(struct mfb_window *window);
-unsigned            mfb_get_window_height(struct mfb_window *window);
-void                mfb_get_window_size(struct mfb_window *window, unsigned *width, unsigned *height);
-unsigned            mfb_get_drawable_offset_x(struct mfb_window *window);
-unsigned            mfb_get_drawable_offset_y(struct mfb_window *window);
-unsigned            mfb_get_drawable_width(struct mfb_window *window);
-unsigned            mfb_get_drawable_height(struct mfb_window *window);
-void                mfb_get_drawable_bounds(struct mfb_window *window, unsigned *offset_x, unsigned *offset_y, unsigned *width, unsigned *height);
-int                 mfb_get_mouse_x(struct mfb_window *window);             // Last mouse pos X (Android/iOS touch path may encode pointer id in upper bits)
-int                 mfb_get_mouse_y(struct mfb_window *window);             // Last mouse pos Y (Android/iOS touch path may encode pointer id in upper bits)
+MFB_EXPORT bool                mfb_is_window_active(struct mfb_window *window);
+MFB_EXPORT bool                mfb_is_mouse_inside(struct mfb_window *window);      // On DOS, true whenever a mouse driver is present.
+MFB_EXPORT unsigned            mfb_get_window_width(struct mfb_window *window);
+MFB_EXPORT unsigned            mfb_get_window_height(struct mfb_window *window);
+MFB_EXPORT void                mfb_get_window_size(struct mfb_window *window, unsigned *width, unsigned *height);
+MFB_EXPORT unsigned            mfb_get_drawable_offset_x(struct mfb_window *window);
+MFB_EXPORT unsigned            mfb_get_drawable_offset_y(struct mfb_window *window);
+MFB_EXPORT unsigned            mfb_get_drawable_width(struct mfb_window *window);
+MFB_EXPORT unsigned            mfb_get_drawable_height(struct mfb_window *window);
+MFB_EXPORT void                mfb_get_drawable_bounds(struct mfb_window *window, unsigned *offset_x, unsigned *offset_y, unsigned *width, unsigned *height);
+MFB_EXPORT int                 mfb_get_mouse_x(struct mfb_window *window);             // Last mouse pos X (Android/iOS touch path may encode pointer id in upper bits)
+MFB_EXPORT int                 mfb_get_mouse_y(struct mfb_window *window);             // Last mouse pos Y (Android/iOS touch path may encode pointer id in upper bits)
 // Decode a value that may contain an encoded touch pointer id.
 // Android/iOS encode touch pointer id in upper bits of mouse X/Y getters.
 // Desktop/Web/DOS: pos=combined, id=0.
@@ -110,33 +112,41 @@ int                 mfb_get_mouse_y(struct mfb_window *window);             // L
 // capable stylus) instead of a finger. Fingers take the ids Android hands out,
 // starting at 0.
 #define MFB_POINTER_ID_MOUSE 15
-void                mfb_decode_touch(int combined, int *pos, int *id);
-int                 mfb_decode_touch_pos(int combined);               // Extract position from a packed touch value.
-int                 mfb_decode_touch_id(int combined);                // Extract pointer id from a packed touch value.
-float               mfb_get_mouse_scroll_x(struct mfb_window *window);      // Mouse wheel delta X from the most recent event pump (0.0f if none).
-float               mfb_get_mouse_scroll_y(struct mfb_window *window);      // Mouse wheel delta Y from the most recent event pump (0.0f if none).
-const uint8_t *     mfb_get_mouse_button_buffer(struct mfb_window *window); // One byte for every button. Press (1), Release 0. (up to 8 buttons)
-const uint8_t *     mfb_get_key_buffer(struct mfb_window *window);          // One byte for every key. Press (1), Release 0.
+MFB_EXPORT void                mfb_decode_touch(int combined, int *pos, int *id);
+MFB_EXPORT int                 mfb_decode_touch_pos(int combined);               // Extract position from a packed touch value.
+MFB_EXPORT int                 mfb_decode_touch_id(int combined);                // Extract pointer id from a packed touch value.
+MFB_EXPORT float               mfb_get_mouse_scroll_x(struct mfb_window *window);      // Mouse wheel delta X from the most recent event pump (0.0f if none).
+MFB_EXPORT float               mfb_get_mouse_scroll_y(struct mfb_window *window);      // Mouse wheel delta Y from the most recent event pump (0.0f if none).
+MFB_EXPORT const uint8_t *     mfb_get_mouse_button_buffer(struct mfb_window *window); // One byte for every button. Press (1), Release 0. (up to 8 buttons)
+MFB_EXPORT const uint8_t *     mfb_get_key_buffer(struct mfb_window *window);          // One byte for every key. Press (1), Release 0.
 
 // FPS
-void                mfb_set_target_fps(uint32_t fps);
-unsigned            mfb_get_target_fps(void);
-bool                mfb_wait_sync(struct mfb_window *window);
+MFB_EXPORT void                mfb_set_target_fps(uint32_t fps);
+MFB_EXPORT unsigned            mfb_get_target_fps(void);
+MFB_EXPORT bool                mfb_wait_sync(struct mfb_window *window);
 
 // Timer
-struct mfb_timer *  mfb_timer_create(void);
-void                mfb_timer_destroy(struct mfb_timer *tmr);
-void                mfb_timer_reset(struct mfb_timer *tmr);
-void                mfb_timer_compensated_reset(struct mfb_timer *tmr);
-double              mfb_timer_now(struct mfb_timer *tmr);
-double              mfb_timer_delta(struct mfb_timer *tmr);
-double              mfb_timer_get_frequency(void);
-double              mfb_timer_get_resolution(void);
+MFB_EXPORT struct mfb_timer *  mfb_timer_create(void);
+MFB_EXPORT void                mfb_timer_destroy(struct mfb_timer *tmr);
+MFB_EXPORT void                mfb_timer_reset(struct mfb_timer *tmr);
+MFB_EXPORT void                mfb_timer_compensated_reset(struct mfb_timer *tmr);
+MFB_EXPORT double              mfb_timer_now(struct mfb_timer *tmr);
+MFB_EXPORT double              mfb_timer_delta(struct mfb_timer *tmr);
+MFB_EXPORT double              mfb_timer_get_frequency(void);
+MFB_EXPORT double              mfb_timer_get_resolution(void);
 
 // Logger
-void                mfb_set_logger(mfb_log_func user_logger);
-void                mfb_set_log_level(mfb_log_level level);
-void                mfb_log(const mfb_log_info *info, const char *tag, const char *message, ...);
+MFB_EXPORT void                mfb_set_logger(mfb_log_func user_logger);
+MFB_EXPORT void                mfb_set_log_level(mfb_log_level level);
+MFB_EXPORT void                mfb_log(const mfb_log_info *info, const char *tag, const char *message, ...);
+
+// Version information (optional; can be queried at runtime if available)
+#if defined(MFB_HAS_RUNTIME_VERSION) && MFB_HAS_RUNTIME_VERSION
+// Use the MFB_VERSION_GET_MAJOR, MFB_VERSION_GET_MINOR, and MFB_VERSION_GET_PATCH macros
+// to extract version components from the value returned by mfb_get_version()
+MFB_EXPORT uint64_t            mfb_get_version(void);
+MFB_EXPORT const char *        mfb_get_version_variant(void);
+#endif
 
 //-------------------------------------
 
@@ -149,7 +159,7 @@ void                mfb_log(const mfb_log_info *info, const char *tag, const cha
 //   is excluded since it is not a physical obstruction).
 // Desktop platforms (macOS, Windows, Linux, Web): true with all zeros for a valid window.
 // All output parameters are optional (may be NULL).
-bool                mfb_get_display_cutout_insets(struct mfb_window *window, int *left, int *top, int *right, int *bottom);
+MFB_EXPORT bool                mfb_get_display_cutout_insets(struct mfb_window *window, int *left, int *top, int *right, int *bottom);
 
 // Returns the full safe-area insets in pixels - the union of the display cutout area
 // AND the system bars (status bar, navigation bar / home indicator).  Useful to know
@@ -160,7 +170,7 @@ bool                mfb_get_display_cutout_insets(struct mfb_window *window, int
 // iOS: reads UIWindow.safeAreaInsets (includes notch + status bar + home indicator).
 // Desktop platforms (macOS, Windows, Linux, Web): true with all zeros for a valid window.
 // All output parameters are optional (may be NULL).
-bool                mfb_get_display_safe_insets(struct mfb_window *window, int *left, int *top, int *right, int *bottom);
+MFB_EXPORT bool                mfb_get_display_safe_insets(struct mfb_window *window, int *left, int *top, int *right, int *bottom);
 
 //-------------------------------------
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 //-------------------------------------
 // cross-platform deprecation macro, try to use the clean [[deprecated]] if it's avalible, if not, use compiler-specific fallbacks
 //-------------------------------------
@@ -106,3 +108,12 @@
 #define MFB_GET_R(col) (((uint32_t) (col) >> __MFB_R_SHIFT) & 0x000000FF)
 #define MFB_GET_G(col) (((uint32_t) (col) >> __MFB_G_SHIFT) & 0x000000FF)
 #define MFB_GET_B(col) (((uint32_t) (col) >> __MFB_B_SHIFT) & 0x000000FF)
+
+//-------------------------------------
+// Move macros for deconstructing version numbers into this header file,
+// so they can be used for mfb_get_version without the need to include "minifb_version.h".
+// Adopting the "MFB_" naming scheme for consistency as opposed to "MINIFB_" naming scheme from "minifb_version.h".
+//-------------------------------------
+#define MFB_VERSION_GET_MAJOR(v) ( (uint16_t)(((uint64_t)(v) >> 32) & 0xFFFFu) )
+#define MFB_VERSION_GET_MINOR(v) ( (uint16_t)(((uint64_t)(v) >> 16) & 0xFFFFu) )
+#define MFB_VERSION_GET_PATCH(v) ( (uint16_t)(((uint64_t)(v)      ) & 0xFFFFu) )
