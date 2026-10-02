@@ -1072,12 +1072,10 @@ destroy_window_data(SWindowData *window_data) {
 
         mfb_timer_destroy(window_data_specific->timer);
 
-#ifndef MINIFB_HAS_LIBDECOR
         if (window_data_specific->toplevel_title != NULL) {
             free(window_data_specific->toplevel_title);
             window_data_specific->toplevel_title = NULL;
         }
-#endif
 
         memset(window_data_specific, 0, sizeof(SWindowData_Way));
         free(window_data_specific);
@@ -3076,6 +3074,13 @@ create_xdg_toplevel(SWindowData *window_data, SWindowData_Way *window_data_speci
         if (wayland_libdecor_create_toplevel(window_data, window_data_specific, effective_flags,
                                              window_title, MFB_STR(MFB_APP_ID), width, height) == true) {
             MFB_LOG(MFB_LOG_INFO, "WaylandMiniFB: libdecor draws this window's frame.");
+
+            // Cache the title too, as a fallback for when libdecor can't provide it.
+            if (window_data_specific->toplevel_title != NULL) {
+                free(window_data_specific->toplevel_title);
+                window_data_specific->toplevel_title = NULL;
+            }
+            window_data_specific->toplevel_title = mfb_safe_title_copy(window_title);
             return true;
         }
 
@@ -3142,14 +3147,6 @@ create_xdg_toplevel(SWindowData *window_data, SWindowData_Way *window_data_speci
 
     xdg_toplevel_set_app_id(window_data_specific->toplevel, MFB_STR(MFB_APP_ID));
 
-#ifdef MINIFB_HAS_LIBDECOR
-    char *safe_title = mfb_safe_title_copy(window_title);
-
-    if (safe_title != NULL) {
-        xdg_toplevel_set_title(window_data_specific->toplevel, safe_title);
-        free(safe_title);
-    }
-#else
     if (window_data_specific->toplevel_title != NULL) {
         // This shouldn't actually hit, but just in case.
         free(window_data_specific->toplevel_title);
@@ -3160,7 +3157,6 @@ create_xdg_toplevel(SWindowData *window_data, SWindowData_Way *window_data_speci
     if (window_data_specific->toplevel_title != NULL) {
         xdg_toplevel_set_title(window_data_specific->toplevel, window_data_specific->toplevel_title);
     }
-#endif
 
     xdg_toplevel_add_listener(window_data_specific->toplevel, &toplevel_listener, window_data);
 
@@ -3997,40 +3993,37 @@ mfb_set_title(struct mfb_window *window, const char *title) {
 
     kUnused(window_data);
 
+    if (window_data_specific->display != NULL) {
 #ifdef MINIFB_HAS_LIBDECOR
-    if (window_data_specific->display != NULL &&
-        wayland_libdecor_set_title(window_data_specific, title) == true) {
-        flush_request(window_data_specific->display, "title update");
-        return;
-    }
+        if (wayland_libdecor_set_title(window_data_specific, title) == true) {
+            if (window_data_specific->toplevel_title != NULL) {
+                free(window_data_specific->toplevel_title);
+                window_data_specific->toplevel_title = NULL;
+            }
+            window_data_specific->toplevel_title = mfb_safe_title_copy(title);            
+
+            flush_request(window_data_specific->display, "title update");
+            return;
+        }
 #endif
 
-    if (window_data_specific->display == NULL || window_data_specific->toplevel == NULL) {
-        MFB_LOG(MFB_LOG_ERROR, "WaylandMiniFB: mfb_set_title cannot update a window without an active Wayland toplevel.");
-        return;
+        if (window_data_specific->toplevel != NULL) {
+            if (window_data_specific->toplevel_title != NULL) {
+                free(window_data_specific->toplevel_title);
+                window_data_specific->toplevel_title = NULL;
+            }
+            window_data_specific->toplevel_title = mfb_safe_title_copy(title);
+
+            if (window_data_specific->toplevel_title != NULL) {
+                xdg_toplevel_set_title(window_data_specific->toplevel, window_data_specific->toplevel_title);
+            }
+
+            flush_request(window_data_specific->display, "title update");
+            return;
+        }     
     }
 
-#ifdef MINIFB_HAS_LIBDECOR
-    char *safe_title = mfb_safe_title_copy(title);
-
-    if (safe_title != NULL) {
-        xdg_toplevel_set_title(window_data_specific->toplevel, safe_title);
-        free(safe_title);
-    }
-#else
-    if (window_data_specific->toplevel_title != NULL) {
-        free(window_data_specific->toplevel_title);
-        window_data_specific->toplevel_title = NULL;
-    }
-
-    window_data_specific->toplevel_title = mfb_safe_title_copy(title);
-
-    if (window_data_specific->toplevel_title != NULL) {
-        xdg_toplevel_set_title(window_data_specific->toplevel, window_data_specific->toplevel_title);
-    }
-#endif
-
-    flush_request(window_data_specific->display, "title update");
+    MFB_LOG(MFB_LOG_ERROR, "WaylandMiniFB: mfb_set_title cannot update a window without an active Wayland toplevel.");
 }
 
 //-------------------------------------
@@ -4053,17 +4046,18 @@ mfb_get_title(struct mfb_window *window, char *title, int title_size) {
     const char *src_title = NULL;
 
     if (wayland_libdecor_get_title(window_data_specific, &src_title) == false || src_title == NULL) {
-        return MFB_STRING_INTERNAL_ERROR;
+        // Fall back to the cached toplevel title if libdecor doesn't provide one.
+        src_title = window_data_specific->toplevel_title;
     }
 #else
     // Wayland doesn't provide a way to query the window title.
-    // So we return the cached title if available.
+    // So we return the cached title instead.
     const char *src_title = window_data_specific->toplevel_title;
+#endif
 
     if (src_title == NULL) {
         return MFB_STRING_INTERNAL_ERROR;
     }
-#endif
 
     // This might be bad if the source title isn't properly null-terminated.
     // strlen is used unconditionally in other places in the code anyway (so this is at least consistent).
