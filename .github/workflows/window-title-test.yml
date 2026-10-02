@@ -3,7 +3,6 @@ name: Window title test
 
 on:
   workflow_dispatch:
-  push: # That's just here to let the workflow run once so it becomes visible for GitHub Actions. Remove later.
 
 jobs:
   window-title:
