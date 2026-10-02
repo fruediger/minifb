@@ -81,3 +81,21 @@ if (EMSCRIPTEN)
         add_dependencies(${test_target} ${test_target}_html)
     endforeach()
 endif()
+
+# window title getters and setters are only available on Windows, X11, Wayland (w/ or w/o libdecor), and macOS
+if (NOT ANDROID AND NOT IOS AND NOT EMSCRIPTEN AND NOT DJGPP)
+    add_executable(window_title_test
+        window_title.c
+    )
+    target_link_libraries(window_title_test
+    PRIVATE
+        minifb
+    )
+    minifb_configure_target(window_title_test)
+
+    set_property(TARGET window_title_test PROPERTY FOLDER "Tests")
+
+    # window title tests are technically only interactive when run with "-i" or "--interactive",
+    # but for simplicity's sake, we include them here as well
+    list(APPEND minifb_interactive_tests window_title_test)
+endif()
