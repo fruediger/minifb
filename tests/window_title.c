@@ -144,11 +144,18 @@ static bool test_window_title(struct mfb_window *window, const char *title) {
     fprintf(stdout, "mfb_get_title: \"%s\"\n", buffer);
     fflush(stdout);
 
+    // Compare the retrieved title with the expected title
+    bool matches = (strcmp(buffer, title) == 0);
+    if (!matches) {
+        fprintf(stdout, "mfb_set_title/mfb_get_title: title mismatch\n");
+        fflush(stdout);
+    }
+
     // Free the allocated buffer
     free(buffer);
     buffer = NULL;
 
-    return true;
+    return matches;
 }
 
 static bool run_tests(struct mfb_window *window, int* total, int* pass, bool interactive) {
