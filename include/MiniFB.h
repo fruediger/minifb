@@ -48,6 +48,15 @@ void                mfb_close(struct mfb_window *window);
 
 // Set title
 void                mfb_set_title(struct mfb_window *window, const char *title);
+// Get title.
+// If title is NULL, returns the title length in bytes, excluding the null terminator; title_size is ignored.
+// Otherwise, title_size is the buffer capacity in bytes and must be at least 1.
+// On success, copies the complete title and its null terminator into the buffer,
+// returning the number of title bytes copied, excluding the terminator.
+// Returns MFB_STRING_BUFFER_TOO_SMALL if the buffer cannot hold the complete title.
+// Returns MFB_STRING_EMPTY (0) for an empty title.
+// Returns a negative value on error (see mfb_string_result for possible errors).
+mfb_string_result   mfb_get_title(struct mfb_window *window, char *title, int title_size);
 
 // Set user data
 void                mfb_set_user_data(struct mfb_window *window, void *user_data);

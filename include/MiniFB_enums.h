@@ -114,3 +114,12 @@ typedef enum {
     MFB_LOG_WARNING,
     MFB_LOG_ERROR,
 } mfb_log_level;
+
+//-------------------------------------
+typedef enum {
+    MFB_STRING_EMPTY = 0,
+    MFB_STRING_INVALID_WINDOW = -1,
+    MFB_STRING_INVALID_ARGUMENT = -2,
+    MFB_STRING_BUFFER_TOO_SMALL = -3,
+    MFB_STRING_INTERNAL_ERROR = -4,
+} mfb_string_result;

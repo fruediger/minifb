@@ -1218,6 +1218,15 @@ mfb_set_title(struct mfb_window *window, const char *title) {
 }
 
 //-------------------------------------
+mfb_string_result
+mfb_get_title(struct mfb_window *window, char *title, int title_size) {
+    (void) window;
+    (void) title;
+    (void) title_size;
+    return MFB_STRING_INTERNAL_ERROR;
+}
+
+//-------------------------------------
 EM_JS(mfb_update_state, mfb_update_events_js, (SWindowData * window_data), {
     // FIXME can we make these global somehow? --pre-js maybe?
     const MFB_STATE_OK = 0;

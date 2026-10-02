@@ -46,4 +46,11 @@ wayland_libdecor_dispatch_pending(SWindowData_Way *window_data_specific);
 bool
 wayland_libdecor_set_title(SWindowData_Way *window_data_specific, const char *title);
 
+//-------------------------------------
+// Gets the frame title. Returns false when libdecor does not own this window,
+// so the caller goes through xdg_toplevel instead.
+//-------------------------------------
+bool
+wayland_libdecor_get_title(SWindowData_Way *window_data_specific, const char **title);
+
 #endif

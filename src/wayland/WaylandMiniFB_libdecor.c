@@ -37,6 +37,7 @@ typedef struct SWaylandLibdecor {
                                                      struct libdecor_configuration *configuration);
 
     void                    (*libdecor_frame_set_title)(struct libdecor_frame *frame, const char *title);
+    const char *            (*libdecor_frame_get_title)(struct libdecor_frame *frame);
     void                    (*libdecor_frame_set_app_id)(struct libdecor_frame *frame, const char *app_id);
     void                    (*libdecor_frame_set_min_content_size)(struct libdecor_frame *frame,
                                                                    int content_width, int content_height);
@@ -127,6 +128,7 @@ libdecor_load(void) {
     complete &= LOAD_SYMBOL(libdecor_frame_commit);
 
     complete &= LOAD_SYMBOL(libdecor_frame_set_title);
+    complete &= LOAD_SYMBOL(libdecor_frame_get_title);
     complete &= LOAD_SYMBOL(libdecor_frame_set_app_id);
     complete &= LOAD_SYMBOL(libdecor_frame_set_min_content_size);
     complete &= LOAD_SYMBOL(libdecor_frame_set_max_content_size);
@@ -337,6 +339,17 @@ wayland_libdecor_set_title(SWindowData_Way *window_data_specific, const char *ti
         free(safe_title);
     }
 
+    return true;
+}
+
+//-------------------------------------
+bool
+wayland_libdecor_get_title(SWindowData_Way *window_data_specific, const char **title) {
+    if (g_libdecor == NULL || window_data_specific->libdecor_frame == NULL || title == NULL) {
+        return false;
+    }
+
+    *title = g_libdecor->libdecor_frame_get_title(window_data_specific->libdecor_frame);
     return true;
 }
 
