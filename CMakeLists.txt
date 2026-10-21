@@ -60,6 +60,7 @@ configure_file(
 set(SrcLib
     include/MiniFB.h
     include/MiniFB_cpp.h
+    include/MiniFB_debug_renderer.h
     include/MiniFB_enums.h
     include/MiniFB_keylist.h
     include/MiniFB_macros.h
@@ -70,6 +71,7 @@ set(SrcLib
 
     src/MiniFB_common.c
     src/MiniFB_cpp.cpp
+    src/MiniFB_debug_renderer.c
     src/MiniFB_internal.c
     src/MiniFB_internal.h
     src/MiniFB_timer.c
@@ -178,6 +180,7 @@ option(MINIFB_AVOID_CPP_HEADERS "Avoid including C++ Headers" OFF)
 option(MINIFB_SANITIZE "Build with AddressSanitizer, plus UndefinedBehaviorSanitizer where the compiler has it" OFF)
 option(MINIFB_USE_MMGR "Track the allocations of the library with mmgr, to find leaks and overruns" OFF)
 option(MINIFB_USE_BILINEAR "Use bilinear filtering when scaling pixel buffers" OFF)
+option(MINIFB_USE_DEBUG_RENDERER "Enable the debug renderer" OFF)
 
 if (MINIFB_SANITIZE AND DJGPP)
     message(FATAL_ERROR "MINIFB_SANITIZE: DJGPP has no sanitizer runtime.")
@@ -428,6 +431,10 @@ target_include_directories(minifb PRIVATE src)  # include internal headers
 
 if (MINIFB_USE_BILINEAR)
     target_compile_definitions(minifb PRIVATE MINIFB_USE_BILINEAR)
+endif()
+
+if (MINIFB_USE_DEBUG_RENDERER)
+    target_compile_definitions(minifb PUBLIC MINIFB_USE_DEBUG_RENDERER=1) # This changes the consumer-facing API definition, so it should be made visible by setting it as PUBLIC
 endif()
 
 if (MINIFB_USE_INVERTED_Y_ON_MACOS)
