@@ -724,7 +724,7 @@ int main() {
     }
 
     do {
-        render_background(page_renderer, timer);
+        render_background(ui_renderer, timer);
         render_page(page_renderer);
         render_ui(ui_renderer);
         render_fps(ui_renderer, timer);
