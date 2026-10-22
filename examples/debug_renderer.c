@@ -176,8 +176,8 @@ render_ui(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_reset_position       (renderer);
 
     mfb_debug_renderer_set_scale            (renderer, 2);
-    mfb_debug_render_text_line              (renderer, u8"╔╡      ╞══════════════════════════════════════════════════════╤═╗");
-    mfb_debug_render_text_line              (renderer, u8"║                                                              │x║");
+    mfb_debug_render_text_line              (renderer, u8"╔╡████████╞════════════════════════════════════════════════════╤═╗");
+    mfb_debug_render_text_line              (renderer, u8"║                                                              │ ║");
     mfb_debug_render_text_line              (renderer, u8"║                                                              └─╢");
     mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
     mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
@@ -214,6 +214,9 @@ render_ui(struct mfb_debug_renderer *renderer) {
     mfb_debug_render_text_line              (renderer, u8"║ Change [S]tyle                 │ [P]revious Page │ [N]ext Page ║"); 
     mfb_debug_render_text_line              (renderer, u8"╚════════════════════════════════╧═════════════════╧═════════════╝");
 
+    mfb_debug_renderer_set_position         (renderer, 770, 20);
+    mfb_debug_render_text                   (renderer, u8"■");
+
     mfb_debug_renderer_set_scale            (renderer, 4);
     mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].shadow_color);
     mfb_debug_renderer_set_position         (renderer, 38, 37);
@@ -232,7 +235,7 @@ render_ui(struct mfb_debug_renderer *renderer) {
 }
 
 static void render_fps(struct mfb_debug_renderer *renderer, struct mfb_timer *timer) {
-    mfb_debug_renderer_set_draw_color(renderer, GRAY);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].background_color);
     mfb_debug_renderer_set_scale     (renderer, 1);
     mfb_debug_renderer_set_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
 
@@ -242,7 +245,7 @@ static void render_fps(struct mfb_debug_renderer *renderer, struct mfb_timer *ti
     const double delta = mfb_timer_delta(timer);
     int length = snprintf(text, sizeof(text), "FPS: %.1f", (isfinite(delta) && delta >= 1.0e-5) ? 1.0 / delta : 0.0);
 
-    mfb_debug_renderer_set_position  (renderer, 28 + (72 - length * MFB_DEBUG_RENDERER_GLYPH_WIDTH) / 2, 8);
+    mfb_debug_renderer_set_position  (renderer, 28 + (96 - length * MFB_DEBUG_RENDERER_GLYPH_WIDTH) / 2, 8);
     mfb_debug_render_text            (renderer, text);
 }
 
@@ -252,7 +255,7 @@ static void
 render_glyphs(struct mfb_debug_renderer *renderer) {
     // The string is led by a ÿ character (U+00FF), to demonstrate that printable
     // yet for our mapping unknown characters are handled by rendering a replacement glyph instead.
-    static const char *glyphs = u8"ÿ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~─│┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬";
+    static const char *glyphs = u8"ÿ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~─│┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▀▄█▌▐░▒▓■";
 
     mfb_debug_renderer_set_padding          (renderer, 36, 160, 36, 48);
     mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
@@ -356,6 +359,9 @@ render_vert_vis(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
     mfb_debug_renderer_set_position           (renderer, 36, 520);
     mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set bottom limit.");
+
+    mfb_debug_renderer_set_position           (renderer, 36, 240);
+    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`");
 }
 
 static void
@@ -370,6 +376,9 @@ render_vert_clip(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
     mfb_debug_renderer_set_position           (renderer, 36, 520);
     mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`, the rendered text is clipped at the set bottom limit at character boundaries.");
+
+    mfb_debug_renderer_set_position           (renderer, 36, 240);
+    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_CLIP`");
 }
 
 static void
@@ -384,6 +393,9 @@ render_vert_wrap(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
     mfb_debug_renderer_set_position           (renderer, 36, 520);
     mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`, the rendered text is wrapped to the top line at the set bottom limit at character boundaries.");
+
+    mfb_debug_renderer_set_position           (renderer, 36, 240);
+    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_WRAP`");
 }
 
 static void

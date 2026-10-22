@@ -172,14 +172,6 @@ typedef struct {
 } precalculated_color;
 
 //-------------------------------------
-#define MAKE_PRECALCULATED_COLOR(alpha, red, green, blue) { \
-    {{ (uint16_t)(((uint32_t)(alpha) & 0xFFu) * 0xFFu), (uint8_t)(0xFFu - ((uint32_t)(alpha) & 0xFFu)) }}, \
-    (uint32_t)((((uint32_t)(alpha) & 0xFFu) * 0xFFu) * ((uint32_t)(red) & 0xFFu)), \
-    (uint32_t)((((uint32_t)(alpha) & 0xFFu) * 0xFFu) * ((uint32_t)(green) & 0xFFu)), \
-    (uint32_t)((((uint32_t)(alpha) & 0xFFu) * 0xFFu) * ((uint32_t)(blue) & 0xFFu)) \
-}
-
-//-------------------------------------
 // Note: This function does NOT validate its inputs. Make sure they're sensible before calling it.
 static inline void
 precalculate_color(const uint32_t color, precalculated_color* result) {
@@ -1761,6 +1753,105 @@ static const bit_glyph g_bit_glyphs[] = {
         _,M,_,M,_,_,
         _,M,_,M,_,_,
         _,M,_,M,_,_
+    ),
+    // Box elements: Upper Half Block (Unicode equivalent: U+2580)
+    MAKE_BIT_GLYPH(
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_
+    ),
+    // Box elements: Lower Half Block (Unicode equivalent: U+2584)
+    MAKE_BIT_GLYPH(
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M
+    ),
+    // Box elements: Full Block (Unicode equivalent: U+2588)
+    MAKE_BIT_GLYPH(
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M,
+        M,M,M,M,M,M
+    ),
+    // Box elements: Left Half Block (Unicode equivalent: U+258C)
+    MAKE_BIT_GLYPH(
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_,
+        M,M,M,_,_,_
+    ),
+    // Box elements: Right Half Block (Unicode equivalent: U+2590)
+    MAKE_BIT_GLYPH(
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M,
+        _,_,_,M,M,M
+    ),
+    // Box elements: Light Shade (Unicode equivalent: U+2591)
+    MAKE_BIT_GLYPH(
+        M,_,_,M,_,_,
+        _,_,M,_,_,M,
+        M,_,_,M,_,_,
+        _,M,_,_,M,_,
+        M,_,_,M,_,_,
+        _,_,M,_,_,M,
+        M,_,_,M,_,_,
+        _,M,_,_,M,_
+    ),
+    // Box elements: Medium Shade (Unicode equivalent: U+2592)
+    MAKE_BIT_GLYPH(
+        _,M,_,M,_,M,
+        M,_,M,_,M,_,
+        _,M,_,M,_,M,
+        M,_,M,_,M,_,
+        _,M,_,M,_,M,
+        M,_,M,_,M,_,
+        _,M,_,M,_,M,
+        M,_,M,_,M,_
+    ),
+    // Box elements: Dark Shade (Unicode equivalent: U+2593)
+    MAKE_BIT_GLYPH(
+        _,M,M,_,M,M,
+        M,M,_,M,M,_,
+        _,M,M,_,M,M,
+        M,_,M,M,_,M,
+        _,M,M,_,M,M,
+        M,M,_,M,M,_,
+        _,M,M,_,M,M,
+        M,_,M,M,_,M
+    ),
+    // Geometric Shapes: Black Square (Unicode equivalent: U+25A0)
+    MAKE_BIT_GLYPH(
+        _,_,_,_,_,_,
+        _,_,_,_,_,_,
+        _,M,M,M,M,_,
+        _,M,M,M,M,_,
+        _,M,M,M,M,_,
+        _,M,M,M,M,_,
+        _,_,_,_,_,_,
+        _,_,_,_,_,_
     )
 };
 
@@ -1806,6 +1897,18 @@ get_bit_glyph_from_codepoint(const uint32_t codepoint) {
         // They're placed continuously in the Unicode plane,
         // so we can map them directly using a simple offset calculation
         return &g_bit_glyphs[107u + (codepoint - 0x2550u)];
+    }
+    switch (codepoint) {
+        // Box elements are scattered again
+        case 0x2580u: return &g_bit_glyphs[136];
+        case 0x2584u: return &g_bit_glyphs[137];
+        case 0x2588u: return &g_bit_glyphs[138];
+        case 0x258Cu: return &g_bit_glyphs[139];
+        case 0x2590u: return &g_bit_glyphs[140];
+        case 0x2591u: return &g_bit_glyphs[141];
+        case 0x2592u: return &g_bit_glyphs[142];
+        case 0x2593u: return &g_bit_glyphs[143];
+        case 0x25A0u: return &g_bit_glyphs[144]; // we treat "Black Square" as a box element for now
     }
     // Everything else: we don't have a corresponding bit_glyph, so we return the replacement glyph instead
     return &g_bit_glyphs[0];
@@ -1914,18 +2017,18 @@ typedef struct mfb_debug_renderer {
 
 // Debug renderer default initialization values
 //-------------------------------------
-#define DEBUG_RENDERER_DEFAULT_SCALE                    1
-#define DEBUG_RENDERER_DEFAULT_CHARACTER_SPACING        0
-#define DEBUG_RENDERER_DEFAULT_LINE_SPACING             0
-#define DEBUG_RENDERER_DEFAULT_BASELINE                 0
-#define DEBUG_RENDERER_DEFAULT_CLEAR_COLOR              MFB_ARGB(0xFFu, 0, 0, 0)
-#define DEBUG_RENDERER_DEFAULT_DRAW_COLOR               MFB_ARGB(0xFFu, 0xFFu, 0xFFu, 0xFFu)
-#define DEBUG_RENDERER_DEFAULT_LEFT_PADDING             0
-#define DEBUG_RENDERER_DEFAULT_RIGHT_PADDING            0
-#define DEBUG_RENDERER_DEFAULT_TOP_PADDING              0
-#define DEBUG_RENDERER_DEFAULT_BOTTOM_PADDING           0
-#define DEBUG_RENDERER_DEFAULT_HORIZONTAL_OVERFLOW      MFB_DEBUG_RENDERER_OVERFLOW_WRAP
-#define DEBUG_RENDERER_DEFAULT_VERTICAL_OVERFLOW        MFB_DEBUG_RENDERER_OVERFLOW_WRAP
+#define DEBUG_RENDERER_DEFAULT_SCALE               1
+#define DEBUG_RENDERER_DEFAULT_CHARACTER_SPACING   0
+#define DEBUG_RENDERER_DEFAULT_LINE_SPACING        0
+#define DEBUG_RENDERER_DEFAULT_BASELINE            0
+#define DEBUG_RENDERER_DEFAULT_CLEAR_COLOR         MFB_ARGB(0xFFu, 0, 0, 0)
+#define DEBUG_RENDERER_DEFAULT_DRAW_COLOR          MFB_ARGB(0xFFu, 0xFFu, 0xFFu, 0xFFu)
+#define DEBUG_RENDERER_DEFAULT_LEFT_PADDING        0
+#define DEBUG_RENDERER_DEFAULT_RIGHT_PADDING       0
+#define DEBUG_RENDERER_DEFAULT_TOP_PADDING         0
+#define DEBUG_RENDERER_DEFAULT_BOTTOM_PADDING      0
+#define DEBUG_RENDERER_DEFAULT_HORIZONTAL_OVERFLOW MFB_DEBUG_RENDERER_OVERFLOW_WRAP
+#define DEBUG_RENDERER_DEFAULT_VERTICAL_OVERFLOW   MFB_DEBUG_RENDERER_OVERFLOW_WRAP
 
 //-------------------------------------
 struct mfb_debug_renderer *
@@ -1935,28 +2038,28 @@ mfb_debug_renderer_create(void) {
         return NULL;
     }
     *renderer = (struct mfb_debug_renderer){
-        NULL,                                            // target
-        0,                                               // target_width
-        0,                                               // target_height
+        NULL,                                       // target
+        0,                                          // target_width
+        0,                                          // target_height
 
-        DEBUG_RENDERER_DEFAULT_SCALE,                    // scale
-        DEBUG_RENDERER_DEFAULT_CHARACTER_SPACING,        // character_spacing
-        DEBUG_RENDERER_DEFAULT_LINE_SPACING,             // line_spacing
-        DEBUG_RENDERER_DEFAULT_BASELINE,                 // baseline
+        DEBUG_RENDERER_DEFAULT_SCALE,               // scale
+        DEBUG_RENDERER_DEFAULT_CHARACTER_SPACING,   // character_spacing
+        DEBUG_RENDERER_DEFAULT_LINE_SPACING,        // line_spacing
+        DEBUG_RENDERER_DEFAULT_BASELINE,            // baseline
 
-        DEBUG_RENDERER_DEFAULT_CLEAR_COLOR,              // clear_color
-        DEBUG_RENDERER_DEFAULT_DRAW_COLOR,               // draw_color
-        { { { 0, 0 } }, 0, 0, 0 },                       // precalculated_draw_color, temporarly initialized to all zero
+        DEBUG_RENDERER_DEFAULT_CLEAR_COLOR,         // clear_color
+        DEBUG_RENDERER_DEFAULT_DRAW_COLOR,          // draw_color
+        { { { 0, 0 } }, 0, 0, 0 },                  // precalculated_draw_color, temporarly initialized to all zero
 
-        DEBUG_RENDERER_DEFAULT_LEFT_PADDING,             // left_padding
-        DEBUG_RENDERER_DEFAULT_TOP_PADDING,              // top_padding
-        DEBUG_RENDERER_DEFAULT_RIGHT_PADDING,            // right_padding
-        DEBUG_RENDERER_DEFAULT_BOTTOM_PADDING,           // bottom_padding
-        DEBUG_RENDERER_DEFAULT_HORIZONTAL_OVERFLOW,      // horizontal_overflow
-        DEBUG_RENDERER_DEFAULT_VERTICAL_OVERFLOW,        // vertical_overflow
+        DEBUG_RENDERER_DEFAULT_LEFT_PADDING,        // left_padding
+        DEBUG_RENDERER_DEFAULT_TOP_PADDING,         // top_padding
+        DEBUG_RENDERER_DEFAULT_RIGHT_PADDING,       // right_padding
+        DEBUG_RENDERER_DEFAULT_BOTTOM_PADDING,      // bottom_padding
+        DEBUG_RENDERER_DEFAULT_HORIZONTAL_OVERFLOW, // horizontal_overflow
+        DEBUG_RENDERER_DEFAULT_VERTICAL_OVERFLOW,   // vertical_overflow
 
-        DEBUG_RENDERER_DEFAULT_LEFT_PADDING,             // x, initialized to the default left-side padding
-        DEBUG_RENDERER_DEFAULT_TOP_PADDING               // y, initialized to the default top-side padding
+        DEBUG_RENDERER_DEFAULT_LEFT_PADDING,        // x, initialized to the default left-side padding
+        DEBUG_RENDERER_DEFAULT_TOP_PADDING          // y, initialized to the default top-side padding
     };
     // make sure to initialize the precalculated draw color correctly
     precalculate_color(renderer->draw_color, &(renderer->precalculated_draw_color));
@@ -2424,9 +2527,9 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
         
         if (!drawn) {
             // The first glyph has been drawn, so record its original bounding box limits.
-            original_left_limit = next_x - glyph_width;
-            original_top_limit = next_y - glyph_height;
-            original_right_limit = next_x + glyph_width;
+            original_left_limit   = next_x - glyph_width;
+            original_top_limit    = next_y - glyph_height;
+            original_right_limit  = next_x + glyph_width;
             original_bottom_limit = next_y + glyph_height;
             drawn = true;
         }
