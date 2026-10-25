@@ -2067,25 +2067,20 @@ mfb_debug_renderer_create(void) {
 }
 
 //-------------------------------------
-struct mfb_debug_renderer *
-mfb_debug_renderer_clone(const struct mfb_debug_renderer *renderer) {
-    if (renderer == NULL) {
-        return NULL;
-    }
-    struct mfb_debug_renderer *clone = (struct mfb_debug_renderer *)malloc(sizeof(struct mfb_debug_renderer));
-    if (clone == NULL) {
-        return NULL;
-    }
-    *clone = *renderer;
-    return clone;
-}
-
-//-------------------------------------
 void
 mfb_debug_renderer_destroy(struct mfb_debug_renderer *renderer) {
     if (renderer != NULL) {
         free(renderer);
     }
+}
+
+//-------------------------------------
+void
+mfb_debug_renderer_copy(struct mfb_debug_renderer *dest, const struct mfb_debug_renderer *src) {
+    if (dest == NULL || src == NULL) {
+        return;
+    }
+    *dest = *src;
 }
 
 //-------------------------------------
@@ -2396,6 +2391,18 @@ mfb_debug_renderer_get_y(const struct mfb_debug_renderer *renderer) {
 //-------------------------------------
 
 //-------------------------------------
+// Note: This function does NOT validate its inputs. Make sure they're sensible before calling it.
+static inline void
+mfb_debug_render_clear_impl(void *buffer, const int pixel_stride, const int left, const int top, const int right, const int bottom, const uint32_t color) {
+    for (size_t y = (size_t)top; y < (size_t)bottom; y++) {
+        uint32_t *restrict row = (uint32_t *)buffer + y * (size_t)pixel_stride;
+        for (size_t x = (size_t)left; x < (size_t)right; x++) {
+            row[x] = color;
+        }
+    }
+}
+
+//-------------------------------------
 void
 mfb_debug_render_clear(struct mfb_debug_renderer *renderer) {
     if (renderer == NULL) {
@@ -2406,16 +2413,38 @@ mfb_debug_render_clear(struct mfb_debug_renderer *renderer) {
           void     *target       = renderer->target;
     const int      target_width  = renderer->target_width;
     const int      target_height = renderer->target_height;
-    const uint32_t clear_color   = renderer->clear_color;
-
     if (target == NULL || target_width <= 0 || target_height <= 0) {
         return;
     }
-
-    const size_t target_size = (size_t)target_width * (size_t)target_height;
-    for (size_t i = 0; i < target_size; i++) {
-        ((uint32_t *)target)[i] = clear_color;
+    const uint32_t clear_color   = renderer->clear_color;
+    const int      left          = renderer->left_padding;
+    const int      top           = renderer->top_padding;
+    const int      right         = target_width  - renderer->right_padding;
+    const int      bottom        = target_height - renderer->bottom_padding;
+    if (left < 0 || top < 0 || right > target_width || bottom > target_height || left >= right || top >= bottom) {
+        return;
     }
+
+    mfb_debug_render_clear_impl(target, target_width, left, top, right, bottom, clear_color);
+}
+
+//-------------------------------------
+void
+mfb_debug_render_clear_full(struct mfb_debug_renderer *renderer) {
+    if (renderer == NULL) {
+        return;
+    }
+
+    // capture the required parts of the current state of the debug renderer as early as possible
+          void     *target       = renderer->target;
+    const int      target_width  = renderer->target_width;
+    const int      target_height = renderer->target_height;
+    if (target == NULL || target_width <= 0 || target_height <= 0) {
+        return;
+    }
+    const uint32_t clear_color   = renderer->clear_color;
+
+    mfb_debug_render_clear_impl(target, target_width, 0, 0, target_width, target_height, clear_color);
 }
 
 //-------------------------------------

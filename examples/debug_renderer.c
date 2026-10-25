@@ -82,10 +82,12 @@ typedef struct {
 // Prototypes for page rendering functions (defined further down below)
 static void render_glyphs(struct mfb_debug_renderer *renderer);
 static void render_scaling(struct mfb_debug_renderer *renderer);
+static void render_padding(struct mfb_debug_renderer *renderer);
 static void render_hori(struct mfb_debug_renderer *renderer);
 static void render_vert_vis(struct mfb_debug_renderer *renderer);
 static void render_vert_clip(struct mfb_debug_renderer *renderer);
 static void render_vert_wrap(struct mfb_debug_renderer *renderer);
+static void render_offscreen(struct mfb_debug_renderer *renderer);
 static void render_rgb(struct mfb_debug_renderer *renderer);
 static void render_cmy(struct mfb_debug_renderer *renderer);
 static void render_gray(struct mfb_debug_renderer *renderer);
@@ -93,10 +95,12 @@ static void render_gray(struct mfb_debug_renderer *renderer);
 static const page g_pages[] = {
     { render_glyphs,    "All Glyphs"                             },
     { render_scaling,   "Scaling"                                },
+    { render_padding,   "Padding"                                },
     { render_hori,      "Horizontal Overflow"                    },
     { render_vert_vis,  "Vertical Overflow (visible)"            },
     { render_vert_clip, "Vertical Overflow (clipped)"            },
     { render_vert_wrap, "Vertical Overflow (wrapped)"            },
+    { render_offscreen, "Partially Offscreen"                    },
     { render_rgb,       "Blended Colors (Red, Green, Blue)"      },
     { render_cmy,       "Blended Colors (Cyan, Magenta, Yellow)" },
     { render_gray,      "Blended Colors (Grayscale)"             },
@@ -139,7 +143,7 @@ initialize_palette() {
 static void
 render_background(struct mfb_debug_renderer *renderer, struct mfb_timer *timer) {
     mfb_debug_renderer_set_clear_color(renderer, g_styles[g_style_index].background_color);
-    mfb_debug_render_clear            (renderer);
+    mfb_debug_render_clear_full       (renderer);
 
     if (g_styles[g_style_index].flags & PLASMA_BACKGROUND) {        
         uint32_t *buffer = (uint32_t *)mfb_debug_renderer_get_target       (renderer);
@@ -169,69 +173,65 @@ render_page(struct mfb_debug_renderer *renderer) {
 
 static void
 render_ui(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_padding          (renderer, 4, 4, 4, 4);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
-    mfb_debug_renderer_set_line_spacing     (renderer, 0);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_reset_position       (renderer);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].foreground_color);
 
-    mfb_debug_renderer_set_scale            (renderer, 2);
-    mfb_debug_render_text_line              (renderer, u8"╔╡████████╞════════════════════════════════════════════════════╤═╗");
-    mfb_debug_render_text_line              (renderer, u8"║                                                              │ ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                              └─╢");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"╠════════════════════════════════════════════════════════════════╣");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"╟────────────────────────────────────────────────────────────────╢");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"║                                                                ║");
-    mfb_debug_render_text_line              (renderer, u8"╟────────────────────────────────┬─────────────────┬─────────────╢");   
-    mfb_debug_render_text_line              (renderer, u8"║ Change [S]tyle                 │ [P]revious Page │ [N]ext Page ║"); 
-    mfb_debug_render_text_line              (renderer, u8"╚════════════════════════════════╧═════════════════╧═════════════╝");
+    mfb_debug_renderer_set_scale     (renderer, 2);
+    mfb_debug_render_text_line       (renderer, u8"╔╡████████╞════════════════════════════════════════════════════╤═╗");
+    mfb_debug_render_text_line       (renderer, u8"║                                                              │ ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                              └─╢");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"╠════════════════════════════════════════════════════════════════╣");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"╟────────────────────────────────────────────────────────────────╢");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"║                                                                ║");
+    mfb_debug_render_text_line       (renderer, u8"╟────────────────────────────────┬─────────────────┬─────────────╢");
+    mfb_debug_render_text_line       (renderer, u8"║ Change [S]tyle                 │ [P]revious Page │ [N]ext Page ║");
+    mfb_debug_render_text_line       (renderer, u8"╚════════════════════════════════╧═════════════════╧═════════════╝");
 
-    mfb_debug_renderer_set_position         (renderer, 770, 20);
-    mfb_debug_render_text                   (renderer, u8"■");
+    mfb_debug_renderer_set_position  (renderer, 770, 20);
+    mfb_debug_render_text            (renderer, u8"■");
 
-    mfb_debug_renderer_set_scale            (renderer, 4);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].shadow_color);
-    mfb_debug_renderer_set_position         (renderer, 38, 37);
-    mfb_debug_render_text_line              (renderer, "Debug Renderer Examples");
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_position         (renderer, 36, 35);
-    mfb_debug_render_text_line              (renderer, "Debug Renderer Examples");
+    mfb_debug_renderer_set_scale     (renderer, 4);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].shadow_color);
+    mfb_debug_renderer_set_position  (renderer, 38, 37);
+    mfb_debug_render_text_line       (renderer, "Debug Renderer Examples");
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_position  (renderer, 36, 35);
+    mfb_debug_render_text_line       (renderer, "Debug Renderer Examples");
 
-    mfb_debug_renderer_set_scale            (renderer, 3);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].shadow_color);
-    mfb_debug_renderer_set_position         (renderer, 38, 106);
-    mfb_debug_render_text_line              (renderer, g_pages[g_page_index].title);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_position         (renderer, 36, 104);
-    mfb_debug_render_text_line              (renderer, g_pages[g_page_index].title);
+    mfb_debug_renderer_set_scale     (renderer, 3);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].shadow_color);
+    mfb_debug_renderer_set_position  (renderer, 38, 106);
+    mfb_debug_render_text_line       (renderer, g_pages[g_page_index].title);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_position  (renderer, 36, 104);
+    mfb_debug_render_text_line       (renderer, g_pages[g_page_index].title);
 }
 
 static void render_fps(struct mfb_debug_renderer *renderer, struct mfb_timer *timer) {
@@ -257,375 +257,434 @@ render_glyphs(struct mfb_debug_renderer *renderer) {
     // yet for our mapping unknown characters are handled by rendering a replacement glyph instead.
     static const char *glyphs = u8"ÿ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~─│┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▀▄█▌▐░▒▓■";
 
-    mfb_debug_renderer_set_padding          (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
-    mfb_debug_renderer_set_line_spacing     (renderer, 0);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].foreground_color);
 
-    mfb_debug_renderer_set_scale            (renderer, 1);
-    mfb_debug_renderer_set_position         (renderer, 36, 160);
-    mfb_debug_render_text_line              (renderer, glyphs);
+    mfb_debug_renderer_set_scale     (renderer, 1);
+    mfb_debug_renderer_set_position  (renderer, 36, 160);
+    mfb_debug_render_text_line       (renderer, glyphs);
 
-    mfb_debug_renderer_set_scale            (renderer, 2);
-    mfb_debug_renderer_set_position         (renderer, 36, 184);
-    mfb_debug_render_text_line              (renderer, glyphs);
+    mfb_debug_renderer_set_scale     (renderer, 2);
+    mfb_debug_renderer_set_position  (renderer, 36, 184);
+    mfb_debug_render_text_line       (renderer, glyphs);
 
-    mfb_debug_renderer_set_scale            (renderer, 3);
-    mfb_debug_renderer_set_position         (renderer, 36, 240);
-    mfb_debug_render_text_line              (renderer, glyphs);
+    mfb_debug_renderer_set_scale     (renderer, 3);
+    mfb_debug_renderer_set_position  (renderer, 36, 240);
+    mfb_debug_render_text_line       (renderer, glyphs);
 
-    mfb_debug_renderer_set_scale            (renderer, 4);
-    mfb_debug_renderer_set_position         (renderer, 36, 344);
-    mfb_debug_render_text_line              (renderer, glyphs);
+    mfb_debug_renderer_set_scale     (renderer, 4);
+    mfb_debug_renderer_set_position  (renderer, 36, 344);
+    mfb_debug_render_text_line       (renderer, glyphs);
 }
 
 static void
 render_scaling(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_padding          (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
-    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
-    mfb_debug_renderer_set_line_spacing     (renderer, 0);
+    mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].foreground_color);
 
-    mfb_debug_renderer_set_scale            (renderer, 1);
-    mfb_debug_renderer_set_position         (renderer, 36, 160);
-    mfb_debug_render_text_line              (renderer, "Scale 1x");
+    mfb_debug_renderer_set_scale     (renderer, 1);
+    mfb_debug_renderer_set_position  (renderer, 36, 160);
+    mfb_debug_render_text_line       (renderer, "Scale 1x");
 
-    mfb_debug_renderer_set_scale            (renderer, 2);
-    mfb_debug_renderer_set_position         (renderer, 36, 176);
-    mfb_debug_render_text_line              (renderer, "Scale 2x");
+    mfb_debug_renderer_set_scale     (renderer, 2);
+    mfb_debug_renderer_set_position  (renderer, 36, 176);
+    mfb_debug_render_text_line       (renderer, "Scale 2x");
 
-    mfb_debug_renderer_set_scale            (renderer, 3);
-    mfb_debug_renderer_set_position         (renderer, 36, 200);
-    mfb_debug_render_text_line              (renderer, "Scale 3x");
+    mfb_debug_renderer_set_scale     (renderer, 3);
+    mfb_debug_renderer_set_position  (renderer, 36, 200);
+    mfb_debug_render_text_line       (renderer, "Scale 3x");
 
-    mfb_debug_renderer_set_scale            (renderer, 4);
-    mfb_debug_renderer_set_position         (renderer, 36, 232);
-    mfb_debug_render_text_line              (renderer, "Scale 4x");
+    mfb_debug_renderer_set_scale     (renderer, 4);
+    mfb_debug_renderer_set_position  (renderer, 36, 232);
+    mfb_debug_render_text_line       (renderer, "Scale 4x");
 
-    mfb_debug_renderer_set_scale            (renderer, 5);
-    mfb_debug_renderer_set_position         (renderer, 36, 272);
-    mfb_debug_render_text_line              (renderer, "Scale 5x");
+    mfb_debug_renderer_set_scale     (renderer, 5);
+    mfb_debug_renderer_set_position  (renderer, 36, 272);
+    mfb_debug_render_text_line       (renderer, "Scale 5x");
 
-    mfb_debug_renderer_set_scale            (renderer, 6);
-    mfb_debug_renderer_set_position         (renderer, 36, 320);
-    mfb_debug_render_text_line              (renderer, "Scale 6x");
+    mfb_debug_renderer_set_scale     (renderer, 6);
+    mfb_debug_renderer_set_position  (renderer, 36, 320);
+    mfb_debug_render_text_line       (renderer, "Scale 6x");
 
-    mfb_debug_renderer_set_scale            (renderer, 7);
-    mfb_debug_renderer_set_position         (renderer, 36, 376);
-    mfb_debug_render_text_line              (renderer, "Scale 7x");
+    mfb_debug_renderer_set_scale     (renderer, 7);
+    mfb_debug_renderer_set_position  (renderer, 36, 376);
+    mfb_debug_render_text_line       (renderer, "Scale 7x");
 
-    mfb_debug_renderer_set_scale            (renderer, 8);
-    mfb_debug_renderer_set_position         (renderer, 36, 440);
-    mfb_debug_render_text_line              (renderer, "Scale 8x");
+    mfb_debug_renderer_set_scale     (renderer, 8);
+    mfb_debug_renderer_set_position  (renderer, 36, 440);
+    mfb_debug_render_text_line       (renderer, "Scale 8x");
+}
+
+static void
+render_padding(struct mfb_debug_renderer *renderer) {
+    mfb_debug_renderer_set_scale      (renderer, 1);
+    mfb_debug_renderer_set_overflow   (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
+    mfb_debug_renderer_set_clear_color(renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_draw_color (renderer, g_styles[g_style_index].background_color);
+
+    char text[256];
+    int width, height, left, top, right, bottom;
+    mfb_debug_renderer_get_target_dimensions(renderer, &width, &height);
+    mfb_debug_renderer_get_padding(renderer, &left, &top, &right, &bottom);
+    const int char_width = mfb_debug_renderer_get_character_spacing(renderer) + MFB_DEBUG_RENDERER_GLYPH_WIDTH;
+
+    mfb_debug_render_clear            (renderer);
+
+    int length = snprintf(text, sizeof(text), "left: %d", left);
+    mfb_debug_renderer_set_position   (renderer, left + 4, (height + top - bottom - MFB_DEBUG_RENDERER_GLYPH_HEIGHT) / 2);
+    mfb_debug_render_text             (renderer, text);
+
+    length = snprintf(text, sizeof(text), "top: %d", top);
+    mfb_debug_renderer_set_position   (renderer, (width + left - right - length * char_width) / 2, top + 4);
+    mfb_debug_render_text             (renderer, text);
+
+    length = snprintf(text, sizeof(text), "right: %d", right);
+    mfb_debug_renderer_set_position   (renderer, width - right - length * char_width - 4, (height + top - bottom - MFB_DEBUG_RENDERER_GLYPH_HEIGHT) / 2);
+    mfb_debug_render_text             (renderer, text);
+
+    length = snprintf(text, sizeof(text), "bottom: %d", bottom);
+    mfb_debug_renderer_set_position   (renderer, (width + left - right - length * char_width) / 2, height - bottom - MFB_DEBUG_RENDERER_GLYPH_HEIGHT - 4);
+    mfb_debug_render_text             (renderer, text);
 }
 
 static void
 render_hori(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_set_scale              (renderer, 2);
-    mfb_debug_renderer_set_padding            (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
-    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing  (renderer, 0);
     mfb_debug_renderer_set_line_spacing       (renderer, 4);
+    mfb_debug_renderer_set_clear_color        (renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].background_color);
+
+    mfb_debug_render_clear                    (renderer);
 
     mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
     mfb_debug_renderer_set_position           (renderer, 36, 160);
     mfb_debug_render_text                     (renderer, "If `horizontal_overflow` is set to ...");
 
+    // In order to make to overflown text visible against the background, just for this example,
+    // draw it twice with different colors.
+    // First in the foreground color with `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE` to show the overflowed text.
+    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].foreground_color);
     mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
     mfb_debug_renderer_set_position           (renderer, 36, 192);
-    mfb_debug_render_text                     (renderer, " ... `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set right limit.");
+    mfb_debug_render_text                     (renderer, "... `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set right limit.");
+
+    // Then in the background color with `MFB_DEBUG_RENDERER_OVERFLOW_CLIP` to overdraw the text that's within the limits.
+    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].background_color);
+    mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
+    mfb_debug_renderer_set_position           (renderer, 36, 192);
+    mfb_debug_render_text                     (renderer, "... `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set right limit.");
 
     mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
     mfb_debug_renderer_set_position           (renderer, 36, 224);
-    mfb_debug_render_text                     (renderer, " ... `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`, the rendered text is clipped at the set right limit at character boundaries.");
+    mfb_debug_render_text                     (renderer, "... `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`, the rendered text is clipped at the set right limit at character boundaries.");
 
     mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
     mfb_debug_renderer_set_position           (renderer, 36, 256);
-    mfb_debug_render_text                     (renderer, " ... `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`, the rendered text is wrapped to the next line at the set right limit at character boundaries.");
+    mfb_debug_render_text                     (renderer, "... `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`, the rendered text is wrapped to the next line at the set right limit at character boundaries.");
 }
 
 static void
 render_vert_vis(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale              (renderer, 2);
-    mfb_debug_renderer_set_padding            (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
-    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing  (renderer, 0);
-    mfb_debug_renderer_set_line_spacing       (renderer, 4);
+    mfb_debug_renderer_set_scale            (renderer, 2);
+    mfb_debug_renderer_set_line_spacing     (renderer, 4);
+    mfb_debug_renderer_set_clear_color      (renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].background_color);
 
-    mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
-    mfb_debug_renderer_set_position           (renderer, 36, 520);
-    mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set bottom limit.");
+    mfb_debug_render_clear                  (renderer);
 
-    mfb_debug_renderer_set_position           (renderer, 36, 240);
-    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`");
+    mfb_debug_renderer_set_position         (renderer, 36, 240);
+    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`");
+
+    // In order to make to overflown text visible against the background, just for this example,
+    // draw it twice with different colors.
+    // First in the foreground color with `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE` to show the overflowed text.
+    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
+    mfb_debug_renderer_set_position         (renderer, 36, 516);
+    mfb_debug_render_text                   (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set bottom limit.");
+
+    // Then in the background color with `MFB_DEBUG_RENDERER_OVERFLOW_CLIP` to overdraw the text that's within the limits.
+    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].background_color);
+    mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
+    mfb_debug_renderer_set_position         (renderer, 36, 516);
+    mfb_debug_render_text                   (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, the rendered text can exceed the set bottom limit.");
 }
 
 static void
 render_vert_clip(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale              (renderer, 2);
-    mfb_debug_renderer_set_padding            (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
-    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing  (renderer, 0);
-    mfb_debug_renderer_set_line_spacing       (renderer, 4);
+    mfb_debug_renderer_set_scale            (renderer, 2);
+    mfb_debug_renderer_set_line_spacing     (renderer, 4);
+    mfb_debug_renderer_set_clear_color      (renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].background_color);
 
-    mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
-    mfb_debug_renderer_set_position           (renderer, 36, 520);
-    mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`, the rendered text is clipped at the set bottom limit at character boundaries.");
+    mfb_debug_render_clear                  (renderer);
 
-    mfb_debug_renderer_set_position           (renderer, 36, 240);
-    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_CLIP`");
+    mfb_debug_renderer_set_position         (renderer, 36, 240);
+    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`");
+
+    mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
+    mfb_debug_renderer_set_position         (renderer, 36, 516);
+    mfb_debug_render_text                   (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`, the rendered text is clipped at the set bottom limit at character boundaries.");
 }
 
 static void
 render_vert_wrap(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale              (renderer, 2);
-    mfb_debug_renderer_set_padding            (renderer, 36, 160, 36, 48);
-    mfb_debug_renderer_set_horizontal_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
-    mfb_debug_renderer_set_draw_color         (renderer, g_styles[g_style_index].foreground_color);
-    mfb_debug_renderer_set_character_spacing  (renderer, 0);
-    mfb_debug_renderer_set_line_spacing       (renderer, 4);
+    mfb_debug_renderer_set_scale            (renderer, 2);
+    mfb_debug_renderer_set_line_spacing     (renderer, 4);
+    mfb_debug_renderer_set_clear_color      (renderer, g_styles[g_style_index].foreground_color);
+    mfb_debug_renderer_set_draw_color       (renderer, g_styles[g_style_index].background_color);
 
-    mfb_debug_renderer_set_vertical_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
-    mfb_debug_renderer_set_position           (renderer, 36, 520);
-    mfb_debug_render_text                     (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`, the rendered text is wrapped to the top line at the set bottom limit at character boundaries.");
+    mfb_debug_render_clear                  (renderer);
 
-    mfb_debug_renderer_set_position           (renderer, 36, 240);
-    mfb_debug_render_text                     (renderer, "*`MFB_DEBUG_RENDERER_OVERFLOW_WRAP`");
+    mfb_debug_renderer_set_position         (renderer, 36, 240);
+    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`");
+
+    mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
+    mfb_debug_renderer_set_position         (renderer, 36, 516);
+    mfb_debug_render_text                   (renderer, "If `vertical_overflow` is set to `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`, the rendered text is wrapped to the top line at the set bottom limit at character boundaries.");
+}
+
+static void
+render_offscreen(struct mfb_debug_renderer *renderer) {
+    mfb_debug_renderer_set_scale       (renderer, 2);
+    mfb_debug_renderer_set_line_spacing(renderer, 4);
+    mfb_debug_render_text              (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`, text can be partially offscreen, and the onscreen portion will still be rendered visibly.");
+
+    mfb_debug_renderer_set_padding     (renderer, 0, 0, 0, 0);
+    mfb_debug_renderer_set_overflow    (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
+    mfb_debug_renderer_set_scale       (renderer, 6);
+    mfb_debug_renderer_set_draw_color  (renderer, GRAY); // choose a color that stands out against any background
+
+    mfb_debug_renderer_set_position    (renderer, -220, -16);
+    mfb_debug_render_text              (renderer, "Partially offscreen text");
+
+    mfb_debug_renderer_set_position    (renderer, 220, 568);
+    mfb_debug_render_text              (renderer, "Partially offscreen text");
 }
 
 static void
 render_rgb(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale            (renderer, 3);
-    mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
+    mfb_debug_renderer_set_scale     (renderer, 3);
+    mfb_debug_renderer_set_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
 
-    mfb_debug_renderer_set_position         (renderer, 36, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 255));
-    mfb_debug_render_text                   (renderer, "Red 100%");
-    mfb_debug_renderer_set_position         (renderer, 36, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 204));
-    mfb_debug_render_text                   (renderer, "Red  80%");
-    mfb_debug_renderer_set_position         (renderer, 36, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 153));
-    mfb_debug_render_text                   (renderer, "Red  60%");
-    mfb_debug_renderer_set_position         (renderer, 36, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 102));
-    mfb_debug_render_text                   (renderer, "Red  40%");
-    mfb_debug_renderer_set_position         (renderer, 36, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 51));
-    mfb_debug_render_text                   (renderer, "Red  20%");
-    mfb_debug_renderer_set_position         (renderer, 36, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(RED, 0));
-    mfb_debug_render_text                   (renderer, "Red   0%");
+    mfb_debug_renderer_set_position  (renderer, 36, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 255));
+    mfb_debug_render_text            (renderer, "Red 100%");
+    mfb_debug_renderer_set_position  (renderer, 36, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 204));
+    mfb_debug_render_text            (renderer, "Red  80%");
+    mfb_debug_renderer_set_position  (renderer, 36, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 153));
+    mfb_debug_render_text            (renderer, "Red  60%");
+    mfb_debug_renderer_set_position  (renderer, 36, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 102));
+    mfb_debug_render_text            (renderer, "Red  40%");
+    mfb_debug_renderer_set_position  (renderer, 36, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 51));
+    mfb_debug_render_text            (renderer, "Red  20%");
+    mfb_debug_renderer_set_position  (renderer, 36, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(RED, 0));
+    mfb_debug_render_text            (renderer, "Red   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 202, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 255));
-    mfb_debug_render_text                   (renderer, "Green 100%");
-    mfb_debug_renderer_set_position         (renderer, 202, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 204));
-    mfb_debug_render_text                   (renderer, "Green  80%");
-    mfb_debug_renderer_set_position         (renderer, 202, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 153));
-    mfb_debug_render_text                   (renderer, "Green  60%");
-    mfb_debug_renderer_set_position         (renderer, 202, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 102));
-    mfb_debug_render_text                   (renderer, "Green  40%");
-    mfb_debug_renderer_set_position         (renderer, 202, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 51));
-    mfb_debug_render_text                   (renderer, "Green  20%");
-    mfb_debug_renderer_set_position         (renderer, 202, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GREEN, 0));
-    mfb_debug_render_text                   (renderer, "Green   0%");
+    mfb_debug_renderer_set_position  (renderer, 202, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 255));
+    mfb_debug_render_text            (renderer, "Green 100%");
+    mfb_debug_renderer_set_position  (renderer, 202, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 204));
+    mfb_debug_render_text            (renderer, "Green  80%");
+    mfb_debug_renderer_set_position  (renderer, 202, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 153));
+    mfb_debug_render_text            (renderer, "Green  60%");
+    mfb_debug_renderer_set_position  (renderer, 202, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 102));
+    mfb_debug_render_text            (renderer, "Green  40%");
+    mfb_debug_renderer_set_position  (renderer, 202, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 51));
+    mfb_debug_render_text            (renderer, "Green  20%");
+    mfb_debug_renderer_set_position  (renderer, 202, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GREEN, 0));
+    mfb_debug_render_text            (renderer, "Green   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 400, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 255));
-    mfb_debug_render_text                   (renderer, "Blue 100%");
-    mfb_debug_renderer_set_position         (renderer, 400, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 204));
-    mfb_debug_render_text                   (renderer, "Blue  80%");
-    mfb_debug_renderer_set_position         (renderer, 400, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 153));
-    mfb_debug_render_text                   (renderer, "Blue  60%");
-    mfb_debug_renderer_set_position         (renderer, 400, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 102));
-    mfb_debug_render_text                   (renderer, "Blue  40%");
-    mfb_debug_renderer_set_position         (renderer, 400, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 51));
-    mfb_debug_render_text                   (renderer, "Blue  20%");
-    mfb_debug_renderer_set_position         (renderer, 400, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLUE, 0));
-    mfb_debug_render_text                   (renderer, "Blue   0%");
+    mfb_debug_renderer_set_position  (renderer, 400, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 255));
+    mfb_debug_render_text            (renderer, "Blue 100%");
+    mfb_debug_renderer_set_position  (renderer, 400, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 204));
+    mfb_debug_render_text            (renderer, "Blue  80%");
+    mfb_debug_renderer_set_position  (renderer, 400, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 153));
+    mfb_debug_render_text            (renderer, "Blue  60%");
+    mfb_debug_renderer_set_position  (renderer, 400, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 102));
+    mfb_debug_render_text            (renderer, "Blue  40%");
+    mfb_debug_renderer_set_position  (renderer, 400, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 51));
+    mfb_debug_render_text            (renderer, "Blue  20%");
+    mfb_debug_renderer_set_position  (renderer, 400, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLUE, 0));
+    mfb_debug_render_text            (renderer, "Blue   0%");
 }
 
 static void
 render_cmy(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale            (renderer, 3);
-    mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
+    mfb_debug_renderer_set_scale     (renderer, 3);
+    mfb_debug_renderer_set_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
 
-    mfb_debug_renderer_set_position         (renderer, 36, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 255));
-    mfb_debug_render_text                   (renderer, "Cyan 100%");
-    mfb_debug_renderer_set_position         (renderer, 36, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 204));
-    mfb_debug_render_text                   (renderer, "Cyan  80%");
-    mfb_debug_renderer_set_position         (renderer, 36, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 153));
-    mfb_debug_render_text                   (renderer, "Cyan  60%");
-    mfb_debug_renderer_set_position         (renderer, 36, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 102));
-    mfb_debug_render_text                   (renderer, "Cyan  40%");
-    mfb_debug_renderer_set_position         (renderer, 36, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 51));
-    mfb_debug_render_text                   (renderer, "Cyan  20%");
-    mfb_debug_renderer_set_position         (renderer, 36, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(CYAN, 0));
-    mfb_debug_render_text                   (renderer, "Cyan  0%");
+    mfb_debug_renderer_set_position  (renderer, 36, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 255));
+    mfb_debug_render_text            (renderer, "Cyan 100%");
+    mfb_debug_renderer_set_position  (renderer, 36, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 204));
+    mfb_debug_render_text            (renderer, "Cyan  80%");
+    mfb_debug_renderer_set_position  (renderer, 36, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 153));
+    mfb_debug_render_text            (renderer, "Cyan  60%");
+    mfb_debug_renderer_set_position  (renderer, 36, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 102));
+    mfb_debug_render_text            (renderer, "Cyan  40%");
+    mfb_debug_renderer_set_position  (renderer, 36, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 51));
+    mfb_debug_render_text            (renderer, "Cyan  20%");
+    mfb_debug_renderer_set_position  (renderer, 36, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(CYAN, 0));
+    mfb_debug_render_text            (renderer, "Cyan  0%");
 
-    mfb_debug_renderer_set_position         (renderer, 220, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 255));
-    mfb_debug_render_text                   (renderer, "Magenta 100%");
-    mfb_debug_renderer_set_position         (renderer, 220, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 204));
-    mfb_debug_render_text                   (renderer, "Magenta  80%");
-    mfb_debug_renderer_set_position         (renderer, 220, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 153));
-    mfb_debug_render_text                   (renderer, "Magenta  60%");
-    mfb_debug_renderer_set_position         (renderer, 220, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 102));
-    mfb_debug_render_text                   (renderer, "Magenta  40%");
-    mfb_debug_renderer_set_position         (renderer, 220, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 51));
-    mfb_debug_render_text                   (renderer, "Magenta  20%");
-    mfb_debug_renderer_set_position         (renderer, 220, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(MAGENTA, 0));
-    mfb_debug_render_text                   (renderer, "Magenta   0%");
+    mfb_debug_renderer_set_position  (renderer, 220, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 255));
+    mfb_debug_render_text            (renderer, "Magenta 100%");
+    mfb_debug_renderer_set_position  (renderer, 220, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 204));
+    mfb_debug_render_text            (renderer, "Magenta  80%");
+    mfb_debug_renderer_set_position  (renderer, 220, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 153));
+    mfb_debug_render_text            (renderer, "Magenta  60%");
+    mfb_debug_renderer_set_position  (renderer, 220, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 102));
+    mfb_debug_render_text            (renderer, "Magenta  40%");
+    mfb_debug_renderer_set_position  (renderer, 220, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 51));
+    mfb_debug_render_text            (renderer, "Magenta  20%");
+    mfb_debug_renderer_set_position  (renderer, 220, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(MAGENTA, 0));
+    mfb_debug_render_text            (renderer, "Magenta   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 450, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 255));
-    mfb_debug_render_text                   (renderer, "Yellow 100%");
-    mfb_debug_renderer_set_position         (renderer, 450, 190);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 204));
-    mfb_debug_render_text                   (renderer, "Yellow  80%");
-    mfb_debug_renderer_set_position         (renderer, 450, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 153));
-    mfb_debug_render_text                   (renderer, "Yellow  60%");
-    mfb_debug_renderer_set_position         (renderer, 450, 250);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 102));
-    mfb_debug_render_text                   (renderer, "Yellow  40%");
-    mfb_debug_renderer_set_position         (renderer, 450, 280);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 51));
-    mfb_debug_render_text                   (renderer, "Yellow  20%");
-    mfb_debug_renderer_set_position         (renderer, 450, 310);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(YELLOW, 0));
-    mfb_debug_render_text                   (renderer, "Yellow   0%");
+    mfb_debug_renderer_set_position  (renderer, 450, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 255));
+    mfb_debug_render_text            (renderer, "Yellow 100%");
+    mfb_debug_renderer_set_position  (renderer, 450, 190);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 204));
+    mfb_debug_render_text            (renderer, "Yellow  80%");
+    mfb_debug_renderer_set_position  (renderer, 450, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 153));
+    mfb_debug_render_text            (renderer, "Yellow  60%");
+    mfb_debug_renderer_set_position  (renderer, 450, 250);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 102));
+    mfb_debug_render_text            (renderer, "Yellow  40%");
+    mfb_debug_renderer_set_position  (renderer, 450, 280);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 51));
+    mfb_debug_render_text            (renderer, "Yellow  20%");
+    mfb_debug_renderer_set_position  (renderer, 450, 310);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(YELLOW, 0));
+    mfb_debug_render_text            (renderer, "Yellow   0%");
 }
 
 static void
 render_gray(struct mfb_debug_renderer *renderer) {
-    mfb_debug_renderer_set_scale            (renderer, 2);
-    mfb_debug_renderer_set_overflow         (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
-    mfb_debug_renderer_set_character_spacing(renderer, 0);
+    mfb_debug_renderer_set_scale     (renderer, 2);
+    mfb_debug_renderer_set_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
 
-    mfb_debug_renderer_set_position         (renderer, 36, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 255));
-    mfb_debug_render_text                   (renderer, "Black 100%");
-    mfb_debug_renderer_set_position         (renderer, 36, 180);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 204));
-    mfb_debug_render_text                   (renderer, "Black  80%");
-    mfb_debug_renderer_set_position         (renderer, 36, 200);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 153));
-    mfb_debug_render_text                   (renderer, "Black  60%");
-    mfb_debug_renderer_set_position         (renderer, 36, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 102));
-    mfb_debug_render_text                   (renderer, "Black  40%");
-    mfb_debug_renderer_set_position         (renderer, 36, 240);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 51));
-    mfb_debug_render_text                   (renderer, "Black  20%");
-    mfb_debug_renderer_set_position         (renderer, 36, 260);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(BLACK, 0));
-    mfb_debug_render_text                   (renderer, "Black   0%");
+    mfb_debug_renderer_set_position  (renderer, 36, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 255));
+    mfb_debug_render_text            (renderer, "Black 100%");
+    mfb_debug_renderer_set_position  (renderer, 36, 180);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 204));
+    mfb_debug_render_text            (renderer, "Black  80%");
+    mfb_debug_renderer_set_position  (renderer, 36, 200);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 153));
+    mfb_debug_render_text            (renderer, "Black  60%");
+    mfb_debug_renderer_set_position  (renderer, 36, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 102));
+    mfb_debug_render_text            (renderer, "Black  40%");
+    mfb_debug_renderer_set_position  (renderer, 36, 240);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 51));
+    mfb_debug_render_text            (renderer, "Black  20%");
+    mfb_debug_renderer_set_position  (renderer, 36, 260);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(BLACK, 0));
+    mfb_debug_render_text            (renderer, "Black   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 180, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 255));
-    mfb_debug_render_text                   (renderer, "D.Gray 100%");
-    mfb_debug_renderer_set_position         (renderer, 180, 180);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 204));
-    mfb_debug_render_text                   (renderer, "D.Gray  80%");
-    mfb_debug_renderer_set_position         (renderer, 180, 200);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 153));
-    mfb_debug_render_text                   (renderer, "D.Gray  60%");
-    mfb_debug_renderer_set_position         (renderer, 180, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 102));
-    mfb_debug_render_text                   (renderer, "D.Gray  40%");
-    mfb_debug_renderer_set_position         (renderer, 180, 240);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 51));
-    mfb_debug_render_text                   (renderer, "D.Gray  20%");
-    mfb_debug_renderer_set_position         (renderer, 180, 260);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(DARK_GRAY, 0));
-    mfb_debug_render_text                   (renderer, "D.Gray   0%");
+    mfb_debug_renderer_set_position  (renderer, 180, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 255));
+    mfb_debug_render_text            (renderer, "D.Gray 100%");
+    mfb_debug_renderer_set_position  (renderer, 180, 180);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 204));
+    mfb_debug_render_text            (renderer, "D.Gray  80%");
+    mfb_debug_renderer_set_position  (renderer, 180, 200);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 153));
+    mfb_debug_render_text            (renderer, "D.Gray  60%");
+    mfb_debug_renderer_set_position  (renderer, 180, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 102));
+    mfb_debug_render_text            (renderer, "D.Gray  40%");
+    mfb_debug_renderer_set_position  (renderer, 180, 240);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 51));
+    mfb_debug_render_text            (renderer, "D.Gray  20%");
+    mfb_debug_renderer_set_position  (renderer, 180, 260);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(DARK_GRAY, 0));
+    mfb_debug_render_text            (renderer, "D.Gray   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 336, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 255));
-    mfb_debug_render_text                   (renderer, "Gray 100%");
-    mfb_debug_renderer_set_position         (renderer, 336, 180);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 204));
-    mfb_debug_render_text                   (renderer, "Gray  80%");
-    mfb_debug_renderer_set_position         (renderer, 336, 200);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 153));
-    mfb_debug_render_text                   (renderer, "Gray  60%");
-    mfb_debug_renderer_set_position         (renderer, 336, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 102));
-    mfb_debug_render_text                   (renderer, "Gray  40%");
-    mfb_debug_renderer_set_position         (renderer, 336, 240);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 51));
-    mfb_debug_render_text                   (renderer, "Gray  20%");
-    mfb_debug_renderer_set_position         (renderer, 336, 260);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(GRAY, 0));
-    mfb_debug_render_text                   (renderer, "Gray   0%");
+    mfb_debug_renderer_set_position  (renderer, 336, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 255));
+    mfb_debug_render_text            (renderer, "Gray 100%");
+    mfb_debug_renderer_set_position  (renderer, 336, 180);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 204));
+    mfb_debug_render_text            (renderer, "Gray  80%");
+    mfb_debug_renderer_set_position  (renderer, 336, 200);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 153));
+    mfb_debug_render_text            (renderer, "Gray  60%");
+    mfb_debug_renderer_set_position  (renderer, 336, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 102));
+    mfb_debug_render_text            (renderer, "Gray  40%");
+    mfb_debug_renderer_set_position  (renderer, 336, 240);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 51));
+    mfb_debug_render_text            (renderer, "Gray  20%");
+    mfb_debug_renderer_set_position  (renderer, 336, 260);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(GRAY, 0));
+    mfb_debug_render_text            (renderer, "Gray   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 470, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 255));
-    mfb_debug_render_text                   (renderer, "L.Gray 100%");
-    mfb_debug_renderer_set_position         (renderer, 470, 180);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 204));
-    mfb_debug_render_text                   (renderer, "L.Gray  80%");
-    mfb_debug_renderer_set_position         (renderer, 470, 200);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 153));
-    mfb_debug_render_text                   (renderer, "L.Gray  60%");
-    mfb_debug_renderer_set_position         (renderer, 470, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 102));
-    mfb_debug_render_text                   (renderer, "L.Gray  40%");
-    mfb_debug_renderer_set_position         (renderer, 470, 240);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 51));
-    mfb_debug_render_text                   (renderer, "L.Gray  20%");
-    mfb_debug_renderer_set_position         (renderer, 470, 260);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(LIGHT_GRAY, 0));
-    mfb_debug_render_text                   (renderer, "L.Gray   0%");
+    mfb_debug_renderer_set_position  (renderer, 470, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 255));
+    mfb_debug_render_text            (renderer, "L.Gray 100%");
+    mfb_debug_renderer_set_position  (renderer, 470, 180);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 204));
+    mfb_debug_render_text            (renderer, "L.Gray  80%");
+    mfb_debug_renderer_set_position  (renderer, 470, 200);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 153));
+    mfb_debug_render_text            (renderer, "L.Gray  60%");
+    mfb_debug_renderer_set_position  (renderer, 470, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 102));
+    mfb_debug_render_text            (renderer, "L.Gray  40%");
+    mfb_debug_renderer_set_position  (renderer, 470, 240);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 51));
+    mfb_debug_render_text            (renderer, "L.Gray  20%");
+    mfb_debug_renderer_set_position  (renderer, 470, 260);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(LIGHT_GRAY, 0));
+    mfb_debug_render_text            (renderer, "L.Gray   0%");
 
-    mfb_debug_renderer_set_position         (renderer, 626, 160);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 255));
-    mfb_debug_render_text                   (renderer, "White 100%");
-    mfb_debug_renderer_set_position         (renderer, 626, 180);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 204));
-    mfb_debug_render_text                   (renderer, "White  80%");
-    mfb_debug_renderer_set_position         (renderer, 626, 200);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 153));
-    mfb_debug_render_text                   (renderer, "White  60%");
-    mfb_debug_renderer_set_position         (renderer, 626, 220);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 102));
-    mfb_debug_render_text                   (renderer, "White  40%");
-    mfb_debug_renderer_set_position         (renderer, 626, 240);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 51));
-    mfb_debug_render_text                   (renderer, "White  20%");
-    mfb_debug_renderer_set_position         (renderer, 626, 260);
-    mfb_debug_renderer_set_draw_color       (renderer, SET_ALPHA(WHITE, 0));
-    mfb_debug_render_text                   (renderer, "White   0%");
+    mfb_debug_renderer_set_position  (renderer, 626, 160);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 255));
+    mfb_debug_render_text            (renderer, "White 100%");
+    mfb_debug_renderer_set_position  (renderer, 626, 180);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 204));
+    mfb_debug_render_text            (renderer, "White  80%");
+    mfb_debug_renderer_set_position  (renderer, 626, 200);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 153));
+    mfb_debug_render_text            (renderer, "White  60%");
+    mfb_debug_renderer_set_position  (renderer, 626, 220);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 102));
+    mfb_debug_render_text            (renderer, "White  40%");
+    mfb_debug_renderer_set_position  (renderer, 626, 240);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 51));
+    mfb_debug_render_text            (renderer, "White  20%");
+    mfb_debug_renderer_set_position  (renderer, 626, 260);
+    mfb_debug_renderer_set_draw_color(renderer, SET_ALPHA(WHITE, 0));
+    mfb_debug_render_text            (renderer, "White   0%");
 }
 
 // Input handling and UI interactions
@@ -687,43 +746,75 @@ mouse_button(struct mfb_window *window, mfb_mouse_button button, mfb_key_mod mod
 int main() {
     initialize_palette();
 
-    struct mfb_window *window = mfb_open("Debug Renderer Examples", WIDTH, HEIGHT);
+    int                       exit_code            = 0;
+    struct mfb_window         *window              = NULL;
+    uint32_t                  *buffer              = NULL;
+    struct mfb_debug_renderer *ui_renderer         = NULL;
+    struct mfb_debug_renderer *ui_renderer_saved   = NULL;
+    struct mfb_debug_renderer *page_renderer       = NULL;
+    struct mfb_debug_renderer *page_renderer_saved = NULL;
+    struct mfb_timer          *timer               = NULL;
+
+    window = mfb_open("Debug Renderer Examples", WIDTH, HEIGHT);
     if (!window) {
-        return -1;
+        exit_code = -1;
+        goto cleanup;
     }
 
     mfb_set_keyboard_callback(window, keyboard);
     mfb_set_mouse_button_callback(window, mouse_button);
 
-    uint32_t *buffer = (uint32_t *)malloc(WIDTH * HEIGHT * sizeof(uint32_t));
+    buffer = (uint32_t *)malloc(WIDTH * HEIGHT * sizeof(uint32_t));
     if (!buffer) {
-        return -1;
+        exit_code = -1;
+        goto cleanup;
     }
 
-    struct mfb_debug_renderer *ui_renderer = mfb_debug_renderer_create();
+    ui_renderer = mfb_debug_renderer_create();
     if (!ui_renderer) {
-        free(buffer);
-        return -1;
+        exit_code = -1;
+        goto cleanup;
     }
 
-    mfb_debug_renderer_set_target(ui_renderer, buffer, WIDTH, HEIGHT);
+    mfb_debug_renderer_set_target    (ui_renderer, buffer, WIDTH, HEIGHT);
+    mfb_debug_renderer_set_padding   (ui_renderer, 4, 4, 4, 4);
+    mfb_debug_renderer_set_overflow  (ui_renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
+    mfb_debug_renderer_reset_position(ui_renderer);
 
-    struct mfb_debug_renderer *page_renderer = mfb_debug_renderer_clone(ui_renderer);
-    if (!page_renderer) {
-        mfb_debug_renderer_destroy(ui_renderer);
-        free(buffer);
-        return -1;
+    ui_renderer_saved = mfb_debug_renderer_clone(ui_renderer);
+    if (ui_renderer_saved == NULL) {
+        exit_code = -1;
+        goto cleanup;
     }
 
-    struct mfb_timer *timer = mfb_timer_create();
-    if (!timer) {
-        mfb_debug_renderer_destroy(page_renderer);
-        mfb_debug_renderer_destroy(ui_renderer);
-        free(buffer);
-        return -1;
+    page_renderer = mfb_debug_renderer_clone(ui_renderer);
+    if (page_renderer == NULL) {
+        exit_code = -1;
+        goto cleanup;
+    }
+
+    mfb_debug_renderer_set_target    (page_renderer, buffer, WIDTH, HEIGHT);
+    mfb_debug_renderer_set_padding   (page_renderer, 36, 160, 36, 66);
+    mfb_debug_renderer_set_overflow  (page_renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
+    mfb_debug_renderer_reset_position(page_renderer);
+
+    page_renderer_saved = mfb_debug_renderer_clone(page_renderer);
+    if (page_renderer_saved == NULL) {
+        exit_code = -1;
+        goto cleanup;
+    }
+
+    timer = mfb_timer_create();
+    if (timer == NULL) {
+        exit_code = -1;
+        goto cleanup;
     }
 
     do {
+        // Reset the renderers to their saved state at the beginning of each frame
+        mfb_debug_renderer_copy(ui_renderer, ui_renderer_saved);
+        mfb_debug_renderer_copy(page_renderer, page_renderer_saved);
+
         render_background(ui_renderer, timer);
         render_page(page_renderer);
         render_ui(ui_renderer);
@@ -735,9 +826,25 @@ int main() {
         }
     } while (mfb_wait_sync(window));
 
-    mfb_timer_destroy(timer);
-    mfb_debug_renderer_destroy(page_renderer);
-    mfb_debug_renderer_destroy(ui_renderer);
-    free(buffer);
-    return 0;
+cleanup:
+    if (timer != NULL) {
+        mfb_timer_destroy(timer);
+    }
+    if (page_renderer_saved != NULL) {
+        mfb_debug_renderer_destroy(page_renderer_saved);
+    }
+    if (page_renderer != NULL) {
+        mfb_debug_renderer_destroy(page_renderer);
+    }
+    if (ui_renderer_saved != NULL) {
+        mfb_debug_renderer_destroy(ui_renderer_saved);
+    }
+    if (ui_renderer != NULL) {
+        mfb_debug_renderer_destroy(ui_renderer);
+    }
+    if (buffer != NULL) {
+        free(buffer);
+    }
+
+    return exit_code;
 }

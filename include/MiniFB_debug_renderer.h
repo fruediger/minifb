@@ -46,15 +46,13 @@ extern "C" {
 // Returns NULL in case of an error.
 struct mfb_debug_renderer * mfb_debug_renderer_create(void);
 
-// Creates a new debug renderer instance by copying the state of an existing one.
-// Both instances, the original and the copied one, must be destroyed with `mfb_debug_renderer_destroy`,
-// respectively, when they're no longer needed.
-// Returns NULL in case of an error.
-struct mfb_debug_renderer * mfb_debug_renderer_clone(const struct mfb_debug_renderer *renderer);
-
 // Destroys a debug renderer instance.
 // It's safe to pass a NULL pointer; in that case, the function will do nothing.
 void                        mfb_debug_renderer_destroy(struct mfb_debug_renderer *renderer);
+
+// Copies the state of one debug renderer instance to another.
+// Can be useful to preserve the state of a renderer to reset the working renderer to at the beginning of a frame, for example.
+void                         mfb_debug_renderer_copy(struct mfb_debug_renderer *dest, const struct mfb_debug_renderer *src);
 
 // Sets or gets the target rendering buffer. The target's dimensions are specified in pixels.
 // If the buffer is NULL or the dimensions are not positive integers, no rendering will occur.
@@ -86,14 +84,11 @@ int                         mfb_debug_renderer_get_line_spacing(const struct mfb
 void                        mfb_debug_renderer_set_baseline(struct mfb_debug_renderer *renderer, int baseline);
 int                         mfb_debug_renderer_get_baseline(const struct mfb_debug_renderer *renderer);
 
-// Sets or gets the color used to reset the whole rendering target to when clearing it.
-// Ignores the current padding and always clears the entire rendering target
+// Sets or gets the color used to reset a portion of the rendering target to when clearing it.
 void                        mfb_debug_renderer_set_clear_color(struct mfb_debug_renderer *renderer, uint32_t clear_color);
 uint32_t                    mfb_debug_renderer_get_clear_color(const struct mfb_debug_renderer *renderer);
 
-// Sets or gets the color used to draw text to the rendering target when rendering text.
-// If the color contains an alpha component different from `255`,
-// alpha blending with the existing content of the rendering target will occur.
+// Sets or gets the color used when rendering text to the rendering target.
 void                        mfb_debug_renderer_set_draw_color(struct mfb_debug_renderer *renderer, uint32_t draw_color);
 uint32_t                    mfb_debug_renderer_get_draw_color(const struct mfb_debug_renderer *renderer);
 
@@ -141,15 +136,22 @@ int                         mfb_debug_renderer_get_x(const struct mfb_debug_rend
 void                        mfb_debug_renderer_set_y(struct mfb_debug_renderer *renderer, int y);
 int                         mfb_debug_renderer_get_y(const struct mfb_debug_renderer *renderer);
 
-// Clears the whole rendering target with the current clear color.
-// The whole rendering target will be overwritten with the clear color.
-// Ignores all padding constraints.
+// Clears a portion of the rendering target with the current clear color, constrained by the current padding.
+// The portion of the rendering target specified by the current padding will be overwritten with the current clear color.
+// No alpha blending will occur, and the content will be fully replaced with the clear color.
 void                        mfb_debug_render_clear(struct mfb_debug_renderer *renderer);
+
+// Clears the entire rendering target with the current clear color, ignoring the current padding.
+// The entire rendering target will be overwritten with the current clear color.
+// No alpha blending will occur, and the content will be fully replaced with the clear color.
+void                        mfb_debug_render_clear_full(struct mfb_debug_renderer *renderer);
 
 // Renders the specified text at the current position using the debug renderer's current state.
 // Returns the amount of input text, in bytes, that was consumed during rendering and before any clipping occurred.
 // If the content is rendered entirely without clipping, the return value will be the total length of the input text, in bytes,
 // excluding the null-terminator.
+// Uses the current draw color as the color for rendering the text. If the draw color has an alpha component different from `255`,
+// alpha blending with the existing content of the rendering target will occur.
 // Notice that any control characters, including line feed (`'\n'`) and carriage return (`'\r'`), are ignored and skipped during rendering.
 // If you want to force a line break at the end of the given text, use `mfb_debug_render_text_line` instead.
 size_t                      mfb_debug_render_text(struct mfb_debug_renderer *renderer, const char *text);
@@ -159,6 +161,8 @@ size_t                      mfb_debug_render_text(struct mfb_debug_renderer *ren
 // Returns the amount of input text, in bytes, that was consumed during rendering and before any clipping occurred.
 // If the content is rendered entirely without clipping, the return value will be the total length of the input text, in bytes,
 // excluding the null-terminator.
+// Uses the current draw color as the color for rendering the text. If the draw color has an alpha component different from `255`,
+// alpha blending with the existing content of the rendering target will occur.
 // Notice that any control characters, including line feed (`'\n'`) and carriage return (`'\r'`), are ignored and skipped during rendering.
 // This function always automatically advances the position to the beginning of the next line after rendering,
 // except in cases where vertical clipping occurs.
@@ -168,13 +172,39 @@ size_t                      mfb_debug_render_text_line(struct mfb_debug_renderer
 }
 #endif
 
+// Convenience function for creating a new debug renderer instance by copying the state of an existing one
+// Like `mfb_debug_renderer_copy`, this is a shallow copy: the clone refers to the same target buffer as the original.
+// Returns NULL in case of an error.
+static inline struct mfb_debug_renderer *
+mfb_debug_renderer_clone(const struct mfb_debug_renderer *renderer) {
+    if (renderer == NULL) {
+        return NULL;
+    }
+    struct mfb_debug_renderer *clone = mfb_debug_renderer_create(); // maybe NULL
+    mfb_debug_renderer_copy(clone, renderer); // it's fine to pass `clone` here, even if it's NULL, `mfb_debug_renderer_copy` does nothing if any input is NULL
+    return clone;
+}
+
+// Convenience function for getting both target dimensions at once
+static inline void
+mfb_debug_renderer_get_target_dimensions(const struct mfb_debug_renderer *renderer, int *width, int *height) {
+    if (width != NULL) {
+        *width = mfb_debug_renderer_get_target_width(renderer);
+    }
+    if (height != NULL) {
+        *height = mfb_debug_renderer_get_target_height(renderer);
+    }
+}
+
 // Convenience functions for setting or getting both horizontal padding values at once
-static inline void mfb_debug_renderer_set_horizontal_padding(struct mfb_debug_renderer *renderer, int left_padding, int right_padding) {
+static inline void
+mfb_debug_renderer_set_horizontal_padding(struct mfb_debug_renderer *renderer, int left_padding, int right_padding) {
     mfb_debug_renderer_set_left_padding(renderer, left_padding);
     mfb_debug_renderer_set_right_padding(renderer, right_padding);
 }
 
-static inline void mfb_debug_renderer_get_horizontal_padding(const struct mfb_debug_renderer *renderer, int *left_padding, int *right_padding) {
+static inline void
+mfb_debug_renderer_get_horizontal_padding(const struct mfb_debug_renderer *renderer, int *left_padding, int *right_padding) {
     if (left_padding != NULL) {
         *left_padding = mfb_debug_renderer_get_left_padding(renderer);
     }
@@ -184,12 +214,14 @@ static inline void mfb_debug_renderer_get_horizontal_padding(const struct mfb_de
 }
 
 // Convenience functions for setting or getting both vertical padding values at once
-static inline void mfb_debug_renderer_set_vertical_padding(struct mfb_debug_renderer *renderer, int top_padding, int bottom_padding) {
+static inline void
+mfb_debug_renderer_set_vertical_padding(struct mfb_debug_renderer *renderer, int top_padding, int bottom_padding) {
     mfb_debug_renderer_set_top_padding(renderer, top_padding);
     mfb_debug_renderer_set_bottom_padding(renderer, bottom_padding);
 }
 
-static inline void mfb_debug_renderer_get_vertical_padding(const struct mfb_debug_renderer *renderer, int *top_padding, int *bottom_padding) {
+static inline void
+mfb_debug_renderer_get_vertical_padding(const struct mfb_debug_renderer *renderer, int *top_padding, int *bottom_padding) {
     if (top_padding != NULL) {
         *top_padding = mfb_debug_renderer_get_top_padding(renderer);
     }
@@ -199,14 +231,16 @@ static inline void mfb_debug_renderer_get_vertical_padding(const struct mfb_debu
 }
 
 // Convenience macros for setting or getting all four padding values at once
-static inline void mfb_debug_renderer_set_padding(struct mfb_debug_renderer *renderer, int padding_left, int padding_top, int padding_right, int padding_bottom) {
+static inline void
+mfb_debug_renderer_set_padding(struct mfb_debug_renderer *renderer, int padding_left, int padding_top, int padding_right, int padding_bottom) {
     mfb_debug_renderer_set_left_padding(renderer, padding_left);
     mfb_debug_renderer_set_top_padding(renderer, padding_top);
     mfb_debug_renderer_set_right_padding(renderer, padding_right);
     mfb_debug_renderer_set_bottom_padding(renderer, padding_bottom);
 }
 
-static inline void mfb_debug_renderer_get_padding(const struct mfb_debug_renderer *renderer, int *padding_left, int *padding_top, int *padding_right, int *padding_bottom) {
+static inline void
+mfb_debug_renderer_get_padding(const struct mfb_debug_renderer *renderer, int *padding_left, int *padding_top, int *padding_right, int *padding_bottom) {
     if (padding_left != NULL) {
         *padding_left = mfb_debug_renderer_get_left_padding(renderer);
     }
@@ -222,12 +256,14 @@ static inline void mfb_debug_renderer_get_padding(const struct mfb_debug_rendere
 }
 
 // Convenience functions for setting or getting both overflow behavior values at once
-static inline void mfb_debug_renderer_set_overflow(struct mfb_debug_renderer *renderer, mfb_debug_renderer_overflow overflow_horizontal, mfb_debug_renderer_overflow overflow_vertical) {
+static inline void
+mfb_debug_renderer_set_overflow(struct mfb_debug_renderer *renderer, mfb_debug_renderer_overflow overflow_horizontal, mfb_debug_renderer_overflow overflow_vertical) {
     mfb_debug_renderer_set_horizontal_overflow(renderer, overflow_horizontal);
     mfb_debug_renderer_set_vertical_overflow(renderer, overflow_vertical);
 }
 
-static inline void mfb_debug_renderer_get_overflow(const struct mfb_debug_renderer *renderer, mfb_debug_renderer_overflow *overflow_horizontal, mfb_debug_renderer_overflow *overflow_vertical) {
+static inline void
+mfb_debug_renderer_get_overflow(const struct mfb_debug_renderer *renderer, mfb_debug_renderer_overflow *overflow_horizontal, mfb_debug_renderer_overflow *overflow_vertical) {
     if (overflow_horizontal != NULL) {
         *overflow_horizontal = mfb_debug_renderer_get_horizontal_overflow(renderer);
     }
@@ -237,18 +273,21 @@ static inline void mfb_debug_renderer_get_overflow(const struct mfb_debug_render
 }
 
 // Convenience function for resetting both position values to the current padding values
-static inline void mfb_debug_renderer_reset_position(struct mfb_debug_renderer *renderer) {
+static inline void
+mfb_debug_renderer_reset_position(struct mfb_debug_renderer *renderer) {
     mfb_debug_renderer_set_x(renderer, mfb_debug_renderer_get_left_padding(renderer));
     mfb_debug_renderer_set_y(renderer, mfb_debug_renderer_get_top_padding(renderer));
 }
 
 // Convenience functions for setting or getting both position values at once
-static inline void mfb_debug_renderer_set_position(struct mfb_debug_renderer *renderer, int x, int y) {
+static inline void
+mfb_debug_renderer_set_position(struct mfb_debug_renderer *renderer, int x, int y) {
     mfb_debug_renderer_set_x(renderer, x);
     mfb_debug_renderer_set_y(renderer, y);
 }
 
-static inline void mfb_debug_renderer_get_position(const struct mfb_debug_renderer *renderer, int *x, int *y) {
+static inline void
+mfb_debug_renderer_get_position(const struct mfb_debug_renderer *renderer, int *x, int *y) {
     if (x != NULL) {
         *x = mfb_debug_renderer_get_x(renderer);
     }
