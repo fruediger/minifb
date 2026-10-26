@@ -391,7 +391,7 @@ render_vert_vis(struct mfb_debug_renderer *renderer) {
     mfb_debug_render_clear                  (renderer);
 
     mfb_debug_renderer_set_position         (renderer, 36, 240);
-    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`");
+    mfb_debug_render_text                   (renderer, "  Using `MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE`.");
 
     // In order to make to overflown text visible against the background, just for this example,
     // draw it twice with different colors.
@@ -418,7 +418,7 @@ render_vert_clip(struct mfb_debug_renderer *renderer) {
     mfb_debug_render_clear                  (renderer);
 
     mfb_debug_renderer_set_position         (renderer, 36, 240);
-    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`");
+    mfb_debug_render_text                   (renderer, "  Using `MFB_DEBUG_RENDERER_OVERFLOW_CLIP`.");
 
     mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_CLIP);
     mfb_debug_renderer_set_position         (renderer, 36, 516);
@@ -435,7 +435,7 @@ render_vert_wrap(struct mfb_debug_renderer *renderer) {
     mfb_debug_render_clear                  (renderer);
 
     mfb_debug_renderer_set_position         (renderer, 36, 240);
-    mfb_debug_render_text                   (renderer, "Using `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`");
+    mfb_debug_render_text                   (renderer, "  Using `MFB_DEBUG_RENDERER_OVERFLOW_WRAP`.");
 
     mfb_debug_renderer_set_vertical_overflow(renderer, MFB_DEBUG_RENDERER_OVERFLOW_WRAP);
     mfb_debug_renderer_set_position         (renderer, 36, 516);
@@ -787,7 +787,7 @@ int main() {
         goto cleanup;
     }
 
-    page_renderer = mfb_debug_renderer_clone(ui_renderer);
+    page_renderer = mfb_debug_renderer_create();
     if (page_renderer == NULL) {
         exit_code = -1;
         goto cleanup;
