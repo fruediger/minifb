@@ -33,8 +33,9 @@
 #define SET_ALPHA(color, alpha) MFB_ARGB(alpha, MFB_GET_R(color), MFB_GET_G(color), MFB_GET_B(color))
 
 //-------------------------------------
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH                 800
+#define HEIGHT                600
+#define FPS_UPDATE_INTERVAL_S 0.25
 
 // (UI) Rendering styles
 //-------------------------------------
@@ -235,6 +236,18 @@ render_ui(struct mfb_debug_renderer *renderer) {
 }
 
 static void render_fps(struct mfb_debug_renderer *renderer, struct mfb_timer *timer) {
+    static uint64_t frames    = 0;
+    static double   last_time = 0.0;
+    static double   fps       = 0.0;
+    frames++;
+    const double curr_time  = mfb_timer_now(timer);
+    const double delta_time = curr_time - last_time;
+    if (delta_time >= FPS_UPDATE_INTERVAL_S) {
+        fps = isfinite(delta_time) && delta_time >= 1.0e-5 ? (double)frames / delta_time : 0.0;
+        frames = 0;
+        last_time = curr_time;
+    }
+
     mfb_debug_renderer_set_draw_color(renderer, g_styles[g_style_index].background_color);
     mfb_debug_renderer_set_scale     (renderer, 1);
     mfb_debug_renderer_set_overflow  (renderer, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE, MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE);
@@ -242,8 +255,7 @@ static void render_fps(struct mfb_debug_renderer *renderer, struct mfb_timer *ti
     // The debug renderer API does not (yet?) string formatting with its `mfb_debug_render_text` function,
     // so the string needs to be formatted manually before rendering.
     static char text[256];
-    const double delta = mfb_timer_delta(timer);
-    int length = snprintf(text, sizeof(text), "FPS: %.1f", (isfinite(delta) && delta >= 1.0e-5) ? 1.0 / delta : 0.0);
+    int length = snprintf(text, sizeof(text), "FPS: %.1f", fps);
 
     mfb_debug_renderer_set_position  (renderer, 28 + (96 - length * MFB_DEBUG_RENDERER_GLYPH_WIDTH) / 2, 8);
     mfb_debug_render_text            (renderer, text);
@@ -691,29 +703,19 @@ render_gray(struct mfb_debug_renderer *renderer) {
 //-------------------------------------
 static void
 keyboard(struct mfb_window *window, mfb_key key, mfb_key_mod mod, bool is_pressed) {
-    (void)window;
     (void)mod;
 
-    if (key == MFB_KB_KEY_S) {        
-        static bool s_held = false;
-        if (!s_held && is_pressed) {
-            next_style();
-        }
-        s_held = is_pressed;
+    if (key == MFB_KB_KEY_ESCAPE && !is_pressed) {
+        mfb_close(window);
     }
-    if (key == MFB_KB_KEY_P) {
-        static bool p_held = false;
-        if (!p_held && is_pressed) {
-            prev_page();
-        }
-        p_held = is_pressed;
+    if (key == MFB_KB_KEY_S && !is_pressed) {
+        next_style();
     }
-    if (key == MFB_KB_KEY_N) {
-        static bool n_held = false;
-        if (!n_held && is_pressed) {
-            next_page();
-        }
-        n_held = is_pressed;
+    if (key == MFB_KB_KEY_P && !is_pressed) {
+        prev_page();
+    }
+    if (key == MFB_KB_KEY_N && !is_pressed) {
+        next_page();
     }
 }
 
@@ -721,24 +723,20 @@ static void
 mouse_button(struct mfb_window *window, mfb_mouse_button button, mfb_key_mod mod, bool is_pressed) {
     (void)mod;
 
-    if (button == MFB_MOUSE_LEFT) {
-        static bool left_held = false;
-        if (!left_held && is_pressed) {
-            const int x = mfb_get_mouse_x(window);
-            const int y = mfb_get_mouse_y(window);
-            if (y >= 4 && y <= 52 && x >= WIDTH - 40 && x <= WIDTH - 4) {
-                mfb_close(window);
-            } else if (y >= HEIGHT - 44 && y <= HEIGHT - 12) {
-                if (x >= 10 && x < 406) {
-                    next_style();
-                } else if (x >= 406 && x < 622) {
-                    prev_page();
-                } else if (x >= 622 && x < 790) {
-                    next_page();
-                }
+    if (button == MFB_MOUSE_LEFT && !is_pressed) {
+        const int x = mfb_get_mouse_x(window);
+        const int y = mfb_get_mouse_y(window);
+        if (y >= 4 && y <= 52 && x >= WIDTH - 40 && x <= WIDTH - 4) {
+            mfb_close(window);
+        } else if (y >= HEIGHT - 44 && y <= HEIGHT - 12) {
+            if (x >= 10 && x < 406) {
+                next_style();
+            } else if (x >= 406 && x < 622) {
+                prev_page();
+            } else if (x >= 622 && x < 790) {
+                next_page();
             }
         }
-        left_held = is_pressed;
     }
 }
 
