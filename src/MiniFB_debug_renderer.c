@@ -2478,9 +2478,9 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
     const int  glyph_height          = MFB_DEBUG_RENDERER_GLYPH_HEIGHT * scale;
     const int  right_glyph_limit     = right_limit - glyph_width;
     const int  bottom_glyph_limit    = bottom_limit - glyph_height;
-    const bool needs_horizontal_clip = horizontal_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP || left_padding > right_glyph_limit; // clipping is also needed when a single glyph can't fit the available space
-    const bool needs_vertical_clip   = vertical_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP || (top_padding - baseline_offset) > bottom_glyph_limit;
-          
+    const bool left_padding_overflow = left_padding > right_glyph_limit;
+    const bool top_padding_overflow  = (top_padding - baseline_offset) > bottom_glyph_limit;
+
     size_t index                 = 0;
     bool   drawn                 = false; // indicates whether any glyph has been drawn yet
     bool   vertical_wrap         = false; // indicates whether the text has wrapped vertically
@@ -2511,10 +2511,11 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
 
         int next_x = x;
         int next_y = y;
-        if ((horizontal_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE)
+        if (horizontal_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE
             && next_x > right_glyph_limit) {
             // content exceeds the right limit
-            if (needs_horizontal_clip) {
+            if (horizontal_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP
+                || left_padding_overflow) {
                 // clip
                 break;
             }
@@ -2522,10 +2523,16 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
             next_x = left_padding;
             next_y += line_advance;
         }
-        if ((vertical_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE)
+        if (vertical_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE
             && next_y > bottom_glyph_limit) {
             // content exceeds the bottom limit
-            if (needs_vertical_clip) {
+            if (vertical_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP
+                || top_padding_overflow) {
+                // clip
+                break;
+            }
+            if (horizontal_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE
+                && left_padding_overflow) {
                 // clip
                 break;
             }
@@ -2553,7 +2560,7 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
             next_x,
             next_y
         );
-        
+
         if (!drawn) {
             // The first glyph has been drawn, so record its original bounding box limits.
             original_left_limit   = next_x - glyph_width;
@@ -2574,10 +2581,11 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
             y += line_advance;
         }
 
-        if ((horizontal_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE)
+        if (horizontal_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE
             && x > right_limit) {
             // current cursor exceeds the right limit
-            if (needs_horizontal_clip) {
+            if (horizontal_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP
+                || left_padding_overflow) {
                 // clip
                 x = right_limit;
             } else {
@@ -2586,10 +2594,11 @@ mfb_debug_render_text_impl(struct mfb_debug_renderer *renderer, const char *text
                 y += line_advance;
             }
         }
-        if ((vertical_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE)
+        if (vertical_overflow != MFB_DEBUG_RENDERER_OVERFLOW_VISIBLE
             && y > bottom_limit) {
             // current cursor exceeds the bottom limit
-            if (needs_vertical_clip) {
+            if (vertical_overflow == MFB_DEBUG_RENDERER_OVERFLOW_CLIP
+                || top_padding_overflow) {
                 // clip
                 y = bottom_limit;
             } else {
