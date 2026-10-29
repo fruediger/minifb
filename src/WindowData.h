@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <MiniFB_types.h>
+#include "MiniFB_stretch.h"
 
 //-------------------------------------
 #define MFB_MAX_KEYS                512
@@ -44,10 +45,10 @@ typedef struct {
     uint32_t                buffer_height;
     uint32_t                buffer_stride;
 
-    // Only the bilinear scaler uses these. They stay outside an #if so that SWindowData has
-    // the same layout in every translation unit, whether or not it defines MINIFB_USE_BILINEAR.
+    mfb_stretch_mode        stretch_mode;
     uint32_t                *scaled_buffer;
     size_t                  scaled_buffer_size;
+    SStretchCache           stretch_cache;
 
     int32_t                 mouse_pos_x;
     int32_t                 mouse_pos_y;

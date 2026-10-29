@@ -135,6 +135,10 @@ mfb_open_ex(const char *title, unsigned width, unsigned height, unsigned flags) 
     UIWindow    *window;
     const char  *window_title = (title != NULL && title[0] != '\0') ? title : "minifb";
 
+    if (mfb_cpu_has_build_level() == false) {
+        return NULL;
+    }
+
     if (width == 0 || height == 0) {
         MFB_LOG(MFB_LOG_ERROR, "iOSMiniFB: invalid window size %ux%u.", width, height);
         return NULL;
@@ -428,6 +432,27 @@ mfb_wait_sync(struct mfb_window *window) {
     }
 
     mfb_timer_compensated_reset(window_data->timer);
+    return true;
+}
+
+//-------------------------------------
+bool
+mfb_set_stretch_mode(struct mfb_window *window, mfb_stretch_mode mode) {
+    if (window == NULL || (mode != MFB_STRETCH_NEAREST && mode != MFB_STRETCH_BILINEAR)) {
+        return false;
+    }
+
+    SWindowData *window_data = (SWindowData *) window;
+    SWindowData_IOS *window_data_specific = (SWindowData_IOS *) window_data->specific;
+    if (window_data_specific == NULL) {
+        MFB_LOG(MFB_LOG_ERROR, "iOSMiniFB: mfb_set_stretch_mode missing iOS-specific window data.");
+        return false;
+    }
+
+    os_unfair_lock_lock(&window_data_specific->buffer_lock);
+    window_data->stretch_mode = mode;
+    os_unfair_lock_unlock(&window_data_specific->buffer_lock);
+
     return true;
 }
 
