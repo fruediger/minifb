@@ -60,6 +60,7 @@ configure_file(
 set(SrcLib
     include/MiniFB.h
     include/MiniFB_cpp.h
+    include/MiniFB_debug_renderer.h
     include/MiniFB_enums.h
     include/MiniFB_keylist.h
     include/MiniFB_macros.h
@@ -72,6 +73,7 @@ set(SrcLib
     src/MiniFB_cpp.cpp
     src/MiniFB_cpu_x86.c
     src/MiniFB_cpu_x86.h
+    src/MiniFB_debug_renderer.c
     src/MiniFB_internal.c
     src/MiniFB_internal.h
     src/MiniFB_stretch.c
@@ -327,6 +329,9 @@ endif()
 # Headers
 option(MINIFB_AVOID_CPP_HEADERS "Avoid including C++ Headers" OFF)
 
+#Debug renderer
+option(MINIFB_USE_DEBUG_RENDERER "Enable the debug renderer" OFF)
+
 # Compilation configuration (will be ran on library and examples)
 #--------------------------------------
 function(minifb_configure_target target)
@@ -550,6 +555,10 @@ if (MINIFB_USE_X86_64_V3_FLAGS)
     endif()
 
     target_compile_definitions(minifb PRIVATE MINIFB_STRETCH_AVX2)
+endif()
+
+if (MINIFB_USE_DEBUG_RENDERER)
+    target_compile_definitions(minifb PUBLIC MINIFB_USE_DEBUG_RENDERER=1) # This changes the consumer-facing API definition, so it should be made visible by setting it as PUBLIC
 endif()
 
 if (MINIFB_USE_INVERTED_Y_ON_MACOS)
@@ -799,6 +808,9 @@ if (MINIFB_BUILD_EXAMPLES)
         minifb_add_example(NAME hidpi                SOURCE examples/hidpi.c)
         minifb_add_example(NAME multiple_windows     SOURCE examples/multiple_windows.c     DOS_NAME multiwin)
         minifb_add_example(NAME timer                SOURCE examples/timer.c)
+        if (MINIFB_USE_DEBUG_RENDERER)
+            minifb_add_example(NAME debug_renderer   SOURCE examples/debug_renderer.c       DOS_NAME dbgrendr)
+        endif()
         if (NOT EMSCRIPTEN)
             minifb_add_example(NAME fullscreen       SOURCE examples/fullscreen.c       DOS_NAME fullscrn)
             minifb_add_example(NAME hide_cursor      SOURCE examples/hide_cursor.c      DOS_NAME hidecurs)
