@@ -4,6 +4,9 @@ project(mouse_events_test)
 # tests/android/app/src/main/cpp -> repository root
 set(MINIFB_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../../../..)
 
+# Android target is static minifb only
+set(MINIFB_BUILD_SHARED OFF)
+
 # build native_app_glue as a static lib
 add_library(native_app_glue STATIC
     ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
@@ -13,6 +16,7 @@ add_library(minifb STATIC
     ${MINIFB_ROOT}/include/MiniFB.h
     ${MINIFB_ROOT}/include/MiniFB_cpp.h
     ${MINIFB_ROOT}/include/MiniFB_enums.h
+    ${MINIFB_ROOT}/include/MiniFB_export.h
 
     ${MINIFB_ROOT}/src/MiniFB_common.c
     ${MINIFB_ROOT}/src/MiniFB_cpp.cpp

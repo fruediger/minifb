@@ -8,7 +8,11 @@ if (ANDROID)
     return()
 endif()
 
-if (NOT EMSCRIPTEN)
+if (NOT MINIFB_BUILD_SHARED AND NOT EMSCRIPTEN)
+    # scaling_test makes use of internal (non-exported) MiniFB functions, therefore we can't just link it against
+    # a shared build of MiniFB. There would be some workarounds for that, e.g., building a dedicated static library
+    # alongside the shared build to link against, but for now, it's simplest to just omit the test when building
+    # MiniFB as a shared library.
     add_executable(scaling_test scaling.c)
     target_link_libraries(scaling_test PRIVATE minifb)
     target_include_directories(scaling_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -36,6 +40,10 @@ target_link_libraries(mouse_events_test
 PRIVATE
     minifb
 )
+if (Math)
+    # mouse_events_test uses math functions, so it needs to link against the math library
+    target_link_libraries(mouse_events_test PRIVATE ${Math})
+endif()
 minifb_configure_target(mouse_events_test)
 minifb_set_dos_name(mouse_events_test mouseevt)
 

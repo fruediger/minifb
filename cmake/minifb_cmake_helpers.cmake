@@ -72,3 +72,25 @@ function(minifb_set_dos_name target short_name)
 
     set_target_properties(${target} PROPERTIES OUTPUT_NAME "${short_name}")
 endfunction()
+
+function(minifb_copy_runtime_shared_library target)
+    if (MINIFB_BUILD_SHARED)
+        if (WIN32)
+            if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.21)
+                add_custom_command(TARGET ${target} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_RUNTIME_DLLS:${target}>" "$<TARGET_FILE_DIR:${target}>"
+                    COMMAND_EXPAND_LISTS
+                )
+            else()
+                # CMake < 3.21 does not have $<TARGET_RUNTIME_DLLS:...>.
+                # So we just copy the minifb DLL to the target directory, which is usually enough. This only copies the
+                # DLL though, so if there are ever other runtime dependencies going forward (e.g., a dependency of
+                # minifb itself), this approach must be extended to copy those as well.
+                add_custom_command(TARGET ${target} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:minifb>" "$<TARGET_FILE_DIR:${target}>"
+                    COMMAND_EXPAND_LISTS
+                )
+            endif()
+        endif()
+    endif()
+endfunction()
