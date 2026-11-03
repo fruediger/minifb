@@ -38,11 +38,15 @@ include("cmake/minifb_cmake_helpers.cmake")
 # use IDE folders in build systems that support it. enabled by default in cmake 3.26+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# directory to add generated headers (created during configuration)
-set(MINIFB_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+# create directories for generated headers and source files (during configuration)
+set(MINIFB_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${MINIFB_GENERATED_DIR}")
+set(MINIFB_GENERATED_INCLUDE_DIR "${MINIFB_GENERATED_DIR}/include")
 file(MAKE_DIRECTORY "${MINIFB_GENERATED_INCLUDE_DIR}")
+set(MINIFB_GENERATED_SRC_DIR "${MINIFB_GENERATED_DIR}/src")
+file(MAKE_DIRECTORY "${MINIFB_GENERATED_SRC_DIR}")
 
-# generate the version header from the templace (.in)
+# generate the version header from the template (.in)
 minifb_compute_git_metadata(
     MINIFB_COMMITS_SINCE_TAG
     MINIFB_COMMIT_COUNT
@@ -54,6 +58,37 @@ configure_file(
     "${MINIFB_GENERATED_INCLUDE_DIR}/minifb_version.h"
     @ONLY
 )
+
+# generate the Windows version info resource file from the template (.in)
+if (WIN32)
+    if (MINIFB_BUILD_SHARED)
+        set(MINIFB_RC_FILETYPE "VFT_DLL")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_SHARED_LIBRARY_PREFIX}minifb${CMAKE_SHARED_LIBRARY_SUFFIX}" # hardcoding the "minifb" part for now
+        )
+    else()
+        set(MINIFB_RC_FILETYPE "VFT_STATIC_LIB")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_STATIC_LIBRARY_PREFIX}minifb${CMAKE_STATIC_LIBRARY_SUFFIX}" # hardcoding the "minifb" part for now
+        )
+    endif()
+
+    set(MINIFB_RC_PRODUCT_VERSION_SUFFIX "")
+    if (NOT MINIFB_GIT_SHA STREQUAL "" AND NOT MINIFB_GIT_SHA STREQUAL "unknown")
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "+${MINIFB_GIT_SHA}")
+        if (MINIFB_GIT_DIRTY)
+            string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "-dirty")
+        endif()
+    elseif(MINIFB_GIT_DIRTY)
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "+dirty")
+    endif()
+
+    configure_file(
+        src/windows/version.rc.in
+        "${MINIFB_GENERATED_SRC_DIR}/version.rc"
+        @ONLY
+    )
+endif()
 
 # Sources
 #--------------------------------------
@@ -91,6 +126,9 @@ set(SrcLib
 set(SrcWindows
     src/windows/WinMiniFB.c
     src/windows/WindowData_Win.h
+
+    # include the generated version.rc (gets automatically passed to the resource compiler by CMake)
+    "${MINIFB_GENERATED_SRC_DIR}/version.rc"
 )
 
 #--
@@ -623,6 +661,10 @@ endif()
 if (MINIFB_LIBRARY_LEVEL)
     get_target_property(minifb_sources minifb SOURCES)
     foreach (source IN LISTS minifb_sources)
+        if (source MATCHES "\\.rc$")
+            # Do not pass /arch flags to resource file compilation! RC interprets this option as /c and that messes it up
+            continue()
+        endif()
         if (NOT source MATCHES "MiniFB_stretch_avx2\.c$" OR MINIFB_LIBRARY_LEVEL STREQUAL "v3")
             set_property(SOURCE ${source} APPEND PROPERTY COMPILE_OPTIONS ${MINIFB_LIBRARY_LEVEL_FLAGS})
         endif()
