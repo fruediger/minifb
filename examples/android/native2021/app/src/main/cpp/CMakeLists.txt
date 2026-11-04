@@ -18,6 +18,9 @@ endif()
 #set(CMAKE_OBJC_FLAGS "${CMAKE_C_FLAGS}")
 #set(CMAKE_OBJCXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+# Android target is static minifb only
+set(MINIFB_BUILD_SHARED OFF)
+
 # build native_app_glue as a static lib
 add_library(native_app_glue STATIC
     ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
@@ -27,6 +30,7 @@ add_library(minifb STATIC
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB.h
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB_cpp.h
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB_enums.h
+    ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../include/MiniFB_export.h
 
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../src/MiniFB_common.c
     ${CMAKE_CURRENT_LIST_DIR}/../../../../../../../src/MiniFB_cpp.cpp

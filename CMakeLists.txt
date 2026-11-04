@@ -38,11 +38,15 @@ include("cmake/minifb_cmake_helpers.cmake")
 # use IDE folders in build systems that support it. enabled by default in cmake 3.26+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# directory to add generated headers (created during configuration)
-set(MINIFB_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+# create directories for generated headers and source files (during configuration)
+set(MINIFB_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${MINIFB_GENERATED_DIR}")
+set(MINIFB_GENERATED_INCLUDE_DIR "${MINIFB_GENERATED_DIR}/include")
 file(MAKE_DIRECTORY "${MINIFB_GENERATED_INCLUDE_DIR}")
+set(MINIFB_GENERATED_SRC_DIR "${MINIFB_GENERATED_DIR}/src")
+file(MAKE_DIRECTORY "${MINIFB_GENERATED_SRC_DIR}")
 
-# generate the version header from the templace (.in)
+# generate the version header from the template (.in)
 minifb_compute_git_metadata(
     MINIFB_COMMITS_SINCE_TAG
     MINIFB_COMMIT_COUNT
@@ -55,12 +59,44 @@ configure_file(
     @ONLY
 )
 
+# generate the Windows version info resource file from the template (.in)
+if (WIN32)
+    if (MINIFB_BUILD_SHARED)
+        set(MINIFB_RC_FILETYPE "VFT_DLL")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_SHARED_LIBRARY_PREFIX}minifb${CMAKE_SHARED_LIBRARY_SUFFIX}" # hardcoding the "minifb" part for now
+        )
+    else()
+        set(MINIFB_RC_FILETYPE "VFT_STATIC_LIB")
+        set(MINIFB_RC_ORIGINAL_FILENAME
+            "${CMAKE_STATIC_LIBRARY_PREFIX}minifb${CMAKE_STATIC_LIBRARY_SUFFIX}" # hardcoding the "minifb" part for now
+        )
+    endif()
+
+    set(MINIFB_RC_PRODUCT_VERSION_SUFFIX "")
+    if (NOT MINIFB_GIT_SHA STREQUAL "" AND NOT MINIFB_GIT_SHA STREQUAL "unknown")
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "+${MINIFB_GIT_SHA}")
+        if (MINIFB_GIT_DIRTY)
+            string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "-dirty")
+        endif()
+    elseif(MINIFB_GIT_DIRTY)
+        string(APPEND MINIFB_RC_PRODUCT_VERSION_SUFFIX "+dirty")
+    endif()
+
+    configure_file(
+        src/windows/version.rc.in
+        "${MINIFB_GENERATED_SRC_DIR}/version.rc"
+        @ONLY
+    )
+endif()
+
 # Sources
 #--------------------------------------
 set(SrcLib
     include/MiniFB.h
     include/MiniFB_cpp.h
     include/MiniFB_enums.h
+    include/MiniFB_export.h
     include/MiniFB_keylist.h
     include/MiniFB_macros.h
     include/MiniFB_types.h
@@ -90,6 +126,9 @@ set(SrcLib
 set(SrcWindows
     src/windows/WinMiniFB.c
     src/windows/WindowData_Win.h
+
+    # include the generated version.rc (gets automatically passed to the resource compiler by CMake)
+    "${MINIFB_GENERATED_SRC_DIR}/version.rc"
 )
 
 #--
@@ -180,6 +219,14 @@ set(SrcDOS
 
 # Options
 #--------------------------------------
+# Build type
+option(MINIFB_BUILD_SHARED "Build minifb as a shared library" OFF)
+
+if (MINIFB_BUILD_SHARED AND (ANDROID OR IOS OR EMSCRIPTEN OR DJGPP))
+    message(WARNING "MINIFB_BUILD_SHARED is not available for the target platform (${CMAKE_SYSTEM_NAME}); forcing it OFF")
+    set(MINIFB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+endif()
+
 # Build targets
 option(MINIFB_BUILD_EXAMPLES "Build minifb example programs" ON)
 option(MINIFB_BUILD_TESTS "Build interactive minifb test programs" ON)
@@ -446,11 +493,31 @@ endfunction()
 
 # Create library target and configure
 #--------------------------------------
-add_library(minifb STATIC ${SrcLib})
+if (MINIFB_BUILD_SHARED)
+    add_library(minifb SHARED ${SrcLib})
+else()
+    add_library(minifb STATIC ${SrcLib})
+endif()
 add_library(minifb::minifb ALIAS minifb) # cmake installing will install the "minifb::" namespace
 
 set_property(TARGET minifb PROPERTY FOLDER "Libs")
 minifb_configure_target(minifb)
+
+if (MINIFB_BUILD_SHARED)
+    if (NOT WIN32)
+        set_target_properties(minifb PROPERTIES
+            C_VISIBILITY_PRESET   hidden
+            CXX_VISIBILITY_PRESET hidden
+        ) # the MFB_EXPORT macro will set the visibility of exported symbols to "default"
+    endif()
+
+    set_target_properties(minifb PROPERTIES
+        VERSION   ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+
+    target_compile_definitions(minifb PUBLIC MINIFB_BUILD_SHARED)
+endif()
 
 if (MINIFB_USE_MMGR)
     include(FetchContent)
@@ -578,6 +645,7 @@ elseif (MACOS)
 
 elseif (MINIFB_USE_WAYLAND_API)
     target_sources(minifb PRIVATE ${SrcWayland})
+    target_compile_definitions(minifb PRIVATE USE_WAYLAND_API)
 
 elseif (MINIFB_USE_X11_API)
     target_sources(minifb PRIVATE ${SrcX11})
@@ -594,6 +662,10 @@ endif()
 if (MINIFB_LIBRARY_LEVEL)
     get_target_property(minifb_sources minifb SOURCES)
     foreach (source IN LISTS minifb_sources)
+        if (source MATCHES "\\.rc$")
+            # Do not pass /arch flags to resource file compilation! RC interprets this option as /c and that messes it up
+            continue()
+        endif()
         if (NOT source MATCHES "MiniFB_stretch_avx2\.c$" OR MINIFB_LIBRARY_LEVEL STREQUAL "v3")
             set_property(SOURCE ${source} APPEND PROPERTY COMPILE_OPTIONS ${MINIFB_LIBRARY_LEVEL_FLAGS})
         endif()
@@ -602,6 +674,12 @@ endif()
 
 # Link main library
 #--------------------------------------
+# It can't really hurt to look for libm (or whatever it's called on the target platform) unconditionally.
+# All platforms support by MiniFB should either have it available as a dedicated dependency (e.g., libm) or it is part
+# of the standard C runtime library (e.g., on Windows). In the latter case, the `Math` variable will just remain unset,
+# and that's fine, because on those platforms, we don't need to explicitly link against it.
+find_library(Math m)
+
 if (MINIFB_USE_OPENGL_API)
     find_package(OpenGL)
     if (NOT OpenGL_FOUND)
@@ -677,6 +755,10 @@ elseif(MINIFB_USE_X11_API)
     if (X11_Xrandr_FOUND)
         target_link_libraries(minifb PRIVATE X11::Xrandr)
         target_compile_definitions(minifb PRIVATE MINIFB_HAS_XRANDR)
+        if (Math)
+            # src/x11/X11MiniFB_scale_funcs.c:get_scale_from_xrandr uses sqrtf, so link against the math library
+            target_link_libraries(minifb PRIVATE ${Math})
+        endif()
     endif()
 
     # xkbcommon owns the text side: keysym to Unicode, dead keys and Compose, the same code
@@ -703,6 +785,7 @@ elseif (EMSCRIPTEN)
     if (MINIFB_USE_WASM_SIMD)
         target_compile_options(minifb PUBLIC -msimd128)
         target_link_options(minifb PUBLIC -msimd128)
+        target_compile_definitions(minifb PRIVATE MINIFB_USE_WASM_SIMD)
     endif()
 
 elseif (WIN32)
@@ -715,11 +798,17 @@ endif()
 
 # example use: minifb_add_example(NAME noise SOURCE examples/noise.c)
 function(minifb_add_example)
-    cmake_parse_arguments(PARSE_ARGV 0 arg "IOS_STORYBOARD;IOS_NO_STORYBOARD" "NAME;DOS_NAME" "SOURCE")
+    cmake_parse_arguments(PARSE_ARGV 0 arg "LINK_MATH;IOS_STORYBOARD;IOS_NO_STORYBOARD" "NAME;DOS_NAME" "SOURCE")
 
     add_executable(${arg_NAME} ${arg_SOURCE})
     target_link_libraries(${arg_NAME} PRIVATE minifb)
+    if (arg_LINK_MATH)
+        if (Math)
+            target_link_libraries(${arg_NAME} PRIVATE ${Math})
+        endif()
+    endif()
     minifb_configure_target(${arg_NAME})
+    minifb_copy_runtime_shared_library(${arg_NAME})
 
     if (arg_DOS_NAME)
         minifb_set_dos_name(${arg_NAME} ${arg_DOS_NAME})
@@ -795,18 +884,19 @@ endif()
 if (MINIFB_BUILD_EXAMPLES)
     if (NOT IOS)
         minifb_add_example(NAME noise                SOURCE examples/noise.c)
-        minifb_add_example(NAME input_events         SOURCE examples/input_events.c         DOS_NAME inpevent)
+        minifb_add_example(NAME input_events         SOURCE examples/input_events.c       DOS_NAME inpevent)
         minifb_add_example(NAME hidpi                SOURCE examples/hidpi.c)
-        minifb_add_example(NAME multiple_windows     SOURCE examples/multiple_windows.c     DOS_NAME multiwin)
+        # multiple_windows uses math functions, so it needs to link against the math library
+        minifb_add_example(NAME multiple_windows     SOURCE examples/multiple_windows.c   DOS_NAME multiwin LINK_MATH)
         minifb_add_example(NAME timer                SOURCE examples/timer.c)
         if (NOT EMSCRIPTEN)
-            minifb_add_example(NAME fullscreen       SOURCE examples/fullscreen.c       DOS_NAME fullscrn)
-            minifb_add_example(NAME hide_cursor      SOURCE examples/hide_cursor.c      DOS_NAME hidecurs)
+            minifb_add_example(NAME fullscreen       SOURCE examples/fullscreen.c         DOS_NAME fullscrn)
+            minifb_add_example(NAME hide_cursor      SOURCE examples/hide_cursor.c        DOS_NAME hidecurs)
             minifb_add_example(NAME input_events_cpp SOURCE examples/input_events_cpp.cpp DOS_NAME inpevcpp)
         endif()
 
         if (DJGPP)
-            minifb_add_example(NAME debug_dos        SOURCE examples/dos/debug_dos.c        DOS_NAME debugdos)
+            minifb_add_example(NAME debug_dos        SOURCE examples/dos/debug_dos.c      DOS_NAME debugdos)
         endif()
 
     else() # iOS
@@ -834,10 +924,20 @@ endif()
 #--------------------------------------
 
 # install the library, and all headers
-install(TARGETS minifb EXPORT minifb)
-install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include/" "${MINIFB_GENERATED_INCLUDE_DIR}"
+install(TARGETS minifb EXPORT minifb
+    RUNTIME DESTINATION  "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION  "${CMAKE_INSTALL_LIBDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+install(
+    DIRECTORY
+        "${CMAKE_CURRENT_LIST_DIR}/include/"
+        "${MINIFB_GENERATED_INCLUDE_DIR}"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
 )
 
 # generate and install files required to find_package minifb
