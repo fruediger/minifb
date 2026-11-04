@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "MiniFB_types.h"
 #include "MiniFB_macros.h"
 #include "MiniFB_export.h"
@@ -170,6 +172,13 @@ MFB_EXPORT bool                mfb_get_display_cutout_insets(struct mfb_window *
 // Desktop platforms (macOS, Windows, Linux, Web): true with all zeros for a valid window.
 // All output parameters are optional (may be NULL).
 MFB_EXPORT bool                mfb_get_display_safe_insets(struct mfb_window *window, int *left, int *top, int *right, int *bottom);
+
+// Get the version of the MiniFB library in use. Might differ from the header version MINIFB_VERSION_NUMERIC.
+// Use MFB_VERSION_GET_* macros to extract its components.
+MFB_EXPORT uint64_t            mfb_get_build_version(void);
+// Get the library's build variant: its target platform and optional configuration identifiers.
+// The returned string is hyphen-separated, starts with the platform, and is never NULL. For example, "windows-opengl".
+MFB_EXPORT const char *        mfb_get_build_variant(void);
 
 //-------------------------------------
 

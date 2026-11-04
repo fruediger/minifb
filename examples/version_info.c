@@ -17,15 +17,20 @@ main(void) {
     m_setLogFiles(MINIFB_MMGR_MEMORY_LOG, MINIFB_MMGR_LEAKS_LOG);
 #endif
 
-    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_STRING    = %s", MINIFB_VERSION_STRING);
-    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_NUMERIC   = 0x%012llX", (unsigned long long) MINIFB_VERSION_NUMERIC);
-    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_MAJOR = %u", (unsigned int) MINIFB_VERSION_GET_MAJOR(MINIFB_VERSION_NUMERIC));
-    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_MINOR = %u", (unsigned int) MINIFB_VERSION_GET_MINOR(MINIFB_VERSION_NUMERIC));
-    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_PATCH = %u", (unsigned int) MINIFB_VERSION_GET_PATCH(MINIFB_VERSION_NUMERIC));
-    MFB_LOGI(TEST_TAG, "MINIFB_COMMITS_SINCE_TAG = %d", MINIFB_COMMITS_SINCE_TAG);
-    MFB_LOGI(TEST_TAG, "MINIFB_COMMIT_COUNT      = %d", MINIFB_COMMIT_COUNT);
-    MFB_LOGI(TEST_TAG, "MINIFB_GIT_SHA           = %s", MINIFB_GIT_SHA);
-    MFB_LOGI(TEST_TAG, "MINIFB_GIT_DIRTY         = %d", MINIFB_GIT_DIRTY);
+    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_STRING                            = %s", MINIFB_VERSION_STRING);
+    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_NUMERIC                           = 0x%012llX", (unsigned long long) MINIFB_VERSION_NUMERIC);
+    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_MAJOR(MINIFB_VERSION_NUMERIC) = %u", (unsigned int) MINIFB_VERSION_GET_MAJOR(MINIFB_VERSION_NUMERIC));
+    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_MINOR(MINIFB_VERSION_NUMERIC) = %u", (unsigned int) MINIFB_VERSION_GET_MINOR(MINIFB_VERSION_NUMERIC));
+    MFB_LOGI(TEST_TAG, "MINIFB_VERSION_GET_PATCH(MINIFB_VERSION_NUMERIC) = %u", (unsigned int) MINIFB_VERSION_GET_PATCH(MINIFB_VERSION_NUMERIC));
+    MFB_LOGI(TEST_TAG, "MINIFB_COMMITS_SINCE_TAG                         = %d", MINIFB_COMMITS_SINCE_TAG);
+    MFB_LOGI(TEST_TAG, "MINIFB_COMMIT_COUNT                              = %d", MINIFB_COMMIT_COUNT);
+    MFB_LOGI(TEST_TAG, "MINIFB_GIT_SHA                                   = %s", MINIFB_GIT_SHA);
+    MFB_LOGI(TEST_TAG, "MINIFB_GIT_DIRTY                                 = %d", MINIFB_GIT_DIRTY);
+    MFB_LOGI(TEST_TAG, "mfb_get_build_version()                          = 0x%012llX", (unsigned long long) mfb_get_build_version());
+    MFB_LOGI(TEST_TAG, "MFB_VERSION_GET_MAJOR(mfb_get_build_version())   = %u", (unsigned int) MFB_VERSION_GET_MAJOR(mfb_get_build_version()));
+    MFB_LOGI(TEST_TAG, "MFB_VERSION_GET_MINOR(mfb_get_build_version())   = %u", (unsigned int) MFB_VERSION_GET_MINOR(mfb_get_build_version()));
+    MFB_LOGI(TEST_TAG, "MFB_VERSION_GET_PATCH(mfb_get_build_version())   = %u", (unsigned int) MFB_VERSION_GET_PATCH(mfb_get_build_version()));
+    MFB_LOGI(TEST_TAG, "mfb_get_build_variant()                          = \"%s\"", mfb_get_build_variant());
 
     return 0;
 }

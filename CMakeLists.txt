@@ -645,6 +645,7 @@ elseif (MACOS)
 
 elseif (MINIFB_USE_WAYLAND_API)
     target_sources(minifb PRIVATE ${SrcWayland})
+    target_compile_definitions(minifb PRIVATE USE_WAYLAND_API)
 
 elseif (MINIFB_USE_X11_API)
     target_sources(minifb PRIVATE ${SrcX11})
@@ -784,6 +785,7 @@ elseif (EMSCRIPTEN)
     if (MINIFB_USE_WASM_SIMD)
         target_compile_options(minifb PUBLIC -msimd128)
         target_link_options(minifb PUBLIC -msimd128)
+        target_compile_definitions(minifb PRIVATE MINIFB_USE_WASM_SIMD)
     endif()
 
 elseif (WIN32)

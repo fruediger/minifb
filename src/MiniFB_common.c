@@ -1,10 +1,12 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
 #include <MiniFB.h>
+#include "minifb_version.h"
 #include "WindowData.h"
 #include "MiniFB_internal.h"
 #include "MiniFB_keylist.h"
@@ -21,6 +23,64 @@
 //-------------------------------------
 short int g_keycodes[MFB_MAX_KEYS] = { 0 };
 //-------------------------------------
+
+//-------------------------------------
+static const char s_build_variant[] =
+#if defined(_WIN32) || defined(WIN32)
+            "windows"
+    #if defined(USE_OPENGL_API)
+            "-opengl"
+    #endif
+#elif defined(__APPLE__) && defined(TARGET_OS_OSX) && TARGET_OS_OSX
+            "macos"
+    #if defined(USE_METAL_API)
+            "-metal"
+    #endif
+    #if defined(USE_INVERTED_Y_ON_MACOS)
+            "-inverted_y"
+    #endif
+#elif defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS
+            "ios"
+#elif defined(__linux__) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
+            "linux"
+    #if defined(USE_WAYLAND_API)
+            "-wayland" /* Wayland is explicitly mentioned */
+        #if defined(MINIFB_HAS_LIBDECOR)
+            "-libdecor"
+        #endif
+        /* xkbcommon is mandatory for Wayland, so no need to explicitly mention it */
+    #else
+            /* X11 is the default on Linux, so no need to explicitly mention it */
+        #if defined(USE_OPENGL_API)
+            "-opengl"
+        #endif
+        #if defined(MINIFB_HAS_XKBCOMMON)
+            "-xkbcommon"
+        #endif
+        #if defined(MINIFB_X11_USE_XIM)
+            "-xim"
+        #endif
+    #endif
+#elif defined(__ANDROID__)
+            "android"
+#elif defined(__EMSCRIPTEN__)
+            "emscripten"
+    #if defined(MINIFB_USE_WASM_SIMD)
+            "-simd"
+    #endif
+#elif defined(__DJGPP__)
+            "dos"
+#elif defined(__unix__) || defined(__unix)
+            "unix" /* generic unix */
+#else
+            "unknown"
+#endif
+#if defined(MINIFB_USE_X86_64_V3)
+            "-x86_64_v3"
+#elif defined(MINIFB_USE_X86_64_V2)
+            "-x86_64_v2"
+#endif
+            ;
 
 // iOS and macOS with Metal define it in their backend, to take the lock that their render loop uses
 //-------------------------------------
@@ -803,3 +863,15 @@ mfb_get_display_safe_insets(struct mfb_window *window, int *left, int *top, int 
 }
 
 #endif // !__ANDROID__ && !TARGET_OS_IOS
+
+//-------------------------------------
+uint64_t
+mfb_get_build_version(void) {
+    return MINIFB_VERSION_NUMERIC;
+}
+
+//-------------------------------------
+const char *
+mfb_get_build_variant(void) {
+    return s_build_variant;
+}

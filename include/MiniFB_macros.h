@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 //-------------------------------------
 // cross-platform deprecation macro, try to use the clean [[deprecated]] if it's avalible, if not, use compiler-specific fallbacks
 //-------------------------------------
@@ -106,3 +108,16 @@
 #define MFB_GET_R(col) (((uint32_t) (col) >> __MFB_R_SHIFT) & 0x000000FF)
 #define MFB_GET_G(col) (((uint32_t) (col) >> __MFB_G_SHIFT) & 0x000000FF)
 #define MFB_GET_B(col) (((uint32_t) (col) >> __MFB_B_SHIFT) & 0x000000FF)
+
+//-------------------------------------
+// Redefine the version macros from minifb_version.h, so that they use the MFB_ prefix, which is more consistent with
+// the rest of the library's API, and to avoid consumers to have to explicitly include minifb_version.h.
+// Reuse the same definition as in minifb_version.h, instead of delegating to the MINIFB_VERSION_GET_* macros, to avoid
+// transitively including minifb_version.h when using the MFB_VERSION_GET_* macros. Code duplication is intentional here
+
+// Get the major version number of the version obtained from mfb_get_build_version()
+#define MFB_VERSION_GET_MAJOR(v) ((uint16_t)(((uint64_t)(v) >> 32) & 0xFFFFu))
+// Get the minor version number of the version obtained from mfb_get_build_version()
+#define MFB_VERSION_GET_MINOR(v) ((uint16_t)(((uint64_t)(v) >> 16) & 0xFFFFu))
+// Get the patch version number of the version obtained from mfb_get_build_version()
+#define MFB_VERSION_GET_PATCH(v) ((uint16_t)(((uint64_t)(v) >>  0) & 0xFFFFu))
